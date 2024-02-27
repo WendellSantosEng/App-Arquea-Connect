@@ -1,0 +1,35 @@
+pega o id da tabela excel fonte, transforma todas as linhas dele nas linhas do meu tablewidget. 
+pega as informações da tabela fonte,e manda pra pro tablewidget.
+exporta a visualização em shp.
+
+requisitos:
+precisa que o app tenha pré-setado a tabela, com as colunas;
+o shp irá com o campo oculto geometry vazio, pois ainda n foi desenhado nada;
+é nescessario pegar apenas as informações relevantes da tabela fonte;
+
+avançado:
+buscar dados em bancos de dados, como datas de criação de demonstrativos;
+ja criar a pasta com o nome do produtor, com safra e car dentro, o shp irá ser gerado dentro de SAFRA;
+selecionar do shape SICAR-MT os CAR, e exportar com o nome do produtor pra pasta criada CAR;
+*é nescessário que a pessoa escolha o ano, pois o nome das pastas e arquivos irá mudar;
+
+objetivo:
+Fazer de forma rápida a seleção e preenchimento dos shp, pra facilitar a vetorização.
+
+INTERFACE:
+
+---- Terá tres abas, uma pra Safra, e outra pra CAR e outra pra tabela fonte, a qual precisa ser estabelecida antes.
+---- Na de SAFRA, vai ter essa seleção de planilha de dados fonte e salvar na pasta safra com o nome do produtor.
+--- Na de CAR, vai ter uma pra selecionar o shape do SICAR-MT selecionar os car de acordo com a tabela fonte e exportar pra pasta CAR com o nome do produtor.
+--- Ambas as abas funcionam sozinhas e antes de execultar, verificam se a pasta com o nome do produtor esta criada e se dentro tem as pastas CAR e SAFRA.
+--- Na aba da tabela fonte, terá como filtrar e pegar os dados que estao filtrados ali.
+
+Avançado:
+
+Sempre que tiver uma tabela nova, diponibilizar o download dela e inserção no app caso o usuario queira.
+o app sempre ira atualizar as tabelas automaticamente no banco de dados pra colocar elas no app, quando entrar produtores novos.
+
+Caso queiram:
+
+Formulario pra envio de produtores por pessoa, em sua pasta direto pra um servidor em nuvem, evitando problemas com o teams
+envio dos demontrativos pro site da arquea automaticamente quando é enviado o produtor.

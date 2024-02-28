@@ -105,7 +105,6 @@ class ClassShape(QObject):
         print("ta carregado")
         self.ui_main_window.btn_selectCAR.setEnabled(True)
 
-
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -134,7 +133,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # self.sicarmt = None
 
         # Botao para abrir arquivos Excel
-        self.btn_import.clicked.connect(lambda: self.abrir_arquivos(self.tableWidget))
+        self.btn_import.clicked.connect(lambda: self.abrir_arquivos("", self.tableWidget))
 
         # Botao para abrir arquivos Shapefile
         self.btn_importshp.clicked.connect(self.abrir_shp)
@@ -146,10 +145,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_saved.clicked.connect(self.salvar_modificacoes)
 
         # Botão para salvar Shapefile
-        self.btn_savedshp.clicked.connect(lambda: self.salvar_shp(self.gdf, self.tableWidget, self.gdf_atributos))
+        self.btn_savedshp.clicked.connect(lambda: self.exportar_shp_da_tabela(self.tableWidget, "SUP"))
 
         # Botao para abrir Planilha de Dados        
-        self.btn_planilha_dados.clicked.connect(self.abrir_arquivos)
+        self.btn_planilha_dados.clicked.connect(lambda: self.abrir_arquivos("DATA", self.tableWidget_2))
 
         # Botão para entrar no filtro
         self.btn_filtrar.clicked.connect(self.show_filter_menu)
@@ -193,6 +192,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Obter os dados da tabela widget
         dados = []
         cabecalhos = []
+
         for column in range(self.tableWidget.columnCount()):
             cabecalhos.append(self.tableWidget.horizontalHeaderItem(column).text())
 
@@ -208,9 +208,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Criar um DataFrame do pandas com os dados da tabela e os cabeçalhos
         df = pd.DataFrame(dados, columns=cabecalhos)
-                        
+
+        list_geometry = df['geometry'].tolist()
+
+        df.drop(columns=['geometry'], inplace=True)
+
         # Chamar a função para modificar os dados
         workbook_modificado = codigo_supressao(df)
+        ws = workbook_modificado.active
+
+        # Verificar se a coluna 'geometry' já existe
+        if 'geometry' not in df.columns:
+            last_column_index = len(df.columns) + 1
+            ws.insert_cols(idx=last_column_index)
+
+            # Adicionar os dados da lista à coluna "geometry"
+            for idx, item in enumerate(list_geometry, start=2):
+                ws.cell(row=idx, column=last_column_index, value=item)
+
+            # Renomear a coluna para 'geometry'
+            ws.cell(row=1, column=last_column_index, value='geometry')
+        else:
+            print("A coluna 'geometry' já existe.")
 
         # Atualizar a QTableWidget com os dados do workbook
         self.mostrar_dados(workbook_modificado, self.tableWidget)
@@ -233,7 +252,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.animation.setEasingCurve(QEasingCurve.InOutQuart)
         self.animation.start()
         
-    def abrir_arquivos(self):
+    def abrir_arquivos(self, value, tablewidget):
         options = QFileDialog.Options()
         fileName, _ = QFileDialog.getOpenFileName(self, "Abrir Arquivo Excel", "", "Arquivos Excel (*.xlsx *.xls)", options=options)
         if fileName:
@@ -245,11 +264,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             else:
                 # Se a aba não existir, você pode criar uma nova aba com esse nome ou tratar de outra maneira
                 pass
-        # Transformar a coluna "DATA" em uma string com dia;mes;ano
-        self.transformar_coluna_data_str(workbook)
+        if value == "DATA":
+            # Transformar a coluna "DATA" em uma string com dia;mes;ano
+            self.transformar_coluna_data_str(workbook)
 
         # Mostrar dados na tabela
-        self.mostrar_dados(workbook, self.tableWidget_2)
+        self.mostrar_dados(workbook, tablewidget)
+
+    def parse_coordinates(self, coord_str):
+        coords = []
+        # Dividir a string em substrings individuais com base na vírgula
+        for coord_pair in coord_str.split(','):
+            # Verificar se a substring não contém a palavra 'POLYGON'
+            if 'POLYGON' not in coord_pair:
+                # Remover os parênteses extras e converter a substring em um par de coordenadas
+                coord_pair = coord_pair.strip().strip(')').strip('(')
+                coords.append(tuple(map(float, coord_pair.split())))
+        return coords
+    
+    def parse_coordinates_sup(self, geom):
+        coords_str = ', '.join([f'({x}, {y})' for x, y in geom.exterior.coords])
+        return coords_str
 
     def transformar_coluna_data_str(self, workbook):
         worksheet = workbook.active
@@ -273,19 +308,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if shp_path:
             # Lendo o arquivo Shapefile como GeoDataFrame
-            self.gdf = gpd.read_file(shp_path)
-            
-            # Removendo a coluna de geometria para obter apenas os atributos
-            self.gdf_atributos = self.gdf.drop(columns='geometry')
+            gdf = gpd.read_file(shp_path)
+
+            # Convertendo as geometrias para strings
+            gdf['geometry'] = gdf['geometry'].apply(lambda geom: str(geom))
 
             # Inicializar um novo workbook do Excel
             wb = Workbook()
             ws = wb.active
 
-            # Adicionar os dados do GeoDataFrame para o Excel
-            for row in dataframe_to_rows(self.gdf_atributos, index=False, header=True):
+            # Adicionar os dados do GeoDataFrame ao workbook do Excel
+            for row in dataframe_to_rows(gdf, index=False, header=True):
                 ws.append(row)
 
+            # Exibir os dados na tabelaWidget
             self.mostrar_dados(wb, self.tableWidget)
 
     # Método para mostrar dados na tabela widget e atualizar a planilha
@@ -526,7 +562,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 print("A coluna 'CAR' não foi encontrada na tabela.")
         else:
             print("O shapefile ainda não foi carregado completamente.")
-
     
     def extrair_dados_da_tabela(self, tablewidget):
         data = []
@@ -552,10 +587,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 df = pd.DataFrame(data, columns=header_items)
 
                 if 'polygon' in df.columns:
+                    print("TEM POLYGON")
                     try:
-                        df['geometry'] = df['polygon'].apply(lambda coords: shapely.geometry.Polygon(coords) if isinstance(coords, list) else None)
+                        print("try entrou")
+                        print(df)
+
+                        df['geometry'] = df['polygon'].apply(lambda coords: shapely.geometry.Polygon(self.parse_coordinates(coords)) if isinstance(coords, str) else None)
+
                         # Remover linhas com geometria inválida
                         df = df.dropna(subset=['geometry'])
+
+                        # Remover a coluna "polygon" agora que a coluna de geometria está presente
+                        df.drop(columns=['polygon'], inplace=True)
+
                         # Criar um GeoDataFrame a partir do DataFrame 'df'
                         gdf = gpd.GeoDataFrame(df)
                     except NameError:
@@ -574,6 +618,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 df['geometry'] = None
                 gdf = gpd.GeoDataFrame(df, geometry=[shapely.geometry.Polygon() for _ in range(len(df))])
                 gdf.to_file(shp_path, driver='ESRI Shapefile')
+
+        elif value == "SUP":
+            data, header_items = self.extrair_dados_da_tabela(tablewidget)
+            shp_path, _ = QFileDialog.getSaveFileName(None, "Salvar Shapefile", "", "Arquivos Shapefile (*.shp)")
+            if shp_path:
+                df = pd.DataFrame(data, columns=header_items)
+
+                df.rename(columns={'geometry': 'polygon'}, inplace=True)
+
+                if 'polygon' in df.columns:
+                    print("TEM POLYGON")
+                    try:
+                        print("try entrou")
+                        print(df)
+
+                        df['geometry'] = df['polygon'].apply(lambda coords: shapely.geometry.Polygon(self.parse_coordinates(coords)) if isinstance(coords, str) else None)
+
+                        # Remover linhas com geometria inválida
+                        df = df.dropna(subset=['geometry'])
+
+                        # Remover a coluna "polygon" agora que a coluna de geometria está presente
+                        df.drop(columns=['polygon'], inplace=True)
+
+                        # Criar um GeoDataFrame a partir do DataFrame 'df'
+                        gdf = gpd.GeoDataFrame(df)
+                    except NameError:
+                        print("Erro ao criar geometria. Verifique se o pacote shapely está corretamente importado.")
+                        return
+                else:
+                    return
+                    
+                gdf.to_file(shp_path, driver='ESRI Shapefile')
+
         else:
             print("Valor não reconhecido para exportação.")
 

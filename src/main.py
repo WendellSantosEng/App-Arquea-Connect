@@ -1,3 +1,20 @@
+"""
+
+!!! APLICAÇÃO EM DESENVOLVIMENTO !!!
+
+Autor: Wendell Resende dos Santos
+Data de Criação: Em desenvolvimento
+
+Descrição:
+Esta aplicação é extremamente exponenciável, e no memomento o intuito principal
+é integração de serviços de geoprocessamento da empresa Arquea Engenharia e Geotecnologia, com Python
+
+Uso:
+Uso exclusivo da equipe Arquea, porém no futuro se expanda
+
+"""
+
+
 import sys
 import io
 from typing import cast
@@ -282,10 +299,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 coords.append(tuple(map(float, coord_pair.split())))
         return coords
     
-    def parse_coordinates_sup(self, geom):
-        coords_str = ', '.join([f'({x}, {y})' for x, y in geom.exterior.coords])
-        return coords_str
-
     def transformar_coluna_data_str(self, workbook):
         worksheet = workbook.active
         data_column_index = None
@@ -330,7 +343,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         worksheet = workbook.active
         dados = []
         for linha in worksheet.iter_rows(values_only=True, min_row=2):
-            dados.append(linha)
+            if not all(cell is None for cell in linha):
+                dados.append(linha)
+
         df = pd.DataFrame(dados, columns=[coluna[0].value for coluna in worksheet.iter_cols()])
         
         tablewidget.setRowCount(df.shape[0])
@@ -372,33 +387,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # Salvar o DataFrame como um arquivo Excel
             df.to_excel(fileName, index=False)
-
-    def salvar_shp(self, gdf, tableWidget, gdfatributos):
-        
-        if gdf is not None:
-            # Atualizar os dados modificados na table widget
-            dados_modificados = []
-            for i in range(tableWidget.rowCount()):
-                linha_modificada = []
-                for j in range(tableWidget.columnCount()):
-                    item = tableWidget.item(i, j)
-                    if item is not None:
-                        linha_modificada.append(item.text())
-                    else:
-                        linha_modificada.append(None)
-                dados_modificados.append(linha_modificada)
-
-            # Criar um DataFrame pandas com os dados modificados
-            df_modificado = pd.DataFrame(dados_modificados, columns=gdfatributos.columns)
-
-            # Criar um novo GeoDataFrame combinando os dados modificados com as geometrias originais
-            gdf_modificado = gdf.copy()
-            gdf_modificado[gdfatributos.columns] = df_modificado
-
-            # Salvar o GeoDataFrame modificado de volta para um shapefile
-            shp_modificado_path, _ = QFileDialog.getSaveFileName(self, "Salvar Shapefile Modificado", "", "Arquivos Shapefile (*.shp)")
-            if shp_modificado_path:
-                gdf_modificado.to_file(shp_modificado_path)
 
     def show_filter_menu(self):
         # Verifica se há uma tabela no tableWidget_2
@@ -722,8 +710,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         event.accept()
 
 if __name__ == '__main__':
-    SHAPE_SAFRA = "src\SHAPE_SAFRA.shp"
     app = QApplication(sys.argv)
     mainWindow = MainWindow()
     mainWindow.show()
     sys.exit(app.exec())
+

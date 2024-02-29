@@ -129,6 +129,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setWindowTitle("ArqueaConnect")
         appIcon = QIcon(u"")
         self.setWindowIcon(appIcon)
+        self.stackedWidget.setCurrentWidget(self.page_home)
 
         # Criar um novo ShapefileLoader
         self.loader = ShapefileLoader()
@@ -138,16 +139,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Botao do menu lateral
         self.pushButton.clicked.connect(self.leftMenu)
 
+        self.toolBox_usinas.setCurrentIndex(-1) 
+
         # Paginas do sistema
         self.pushButton_2.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.page_home))
-        self.pushButton_3.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.page_codsup))
-        self.pushButton_8.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.page_shape))
+        self.pushButton_9.clicked.connect(lambda: (
+            self.stackedWidget_3.setCurrentWidget(self.page),
+            self.stackedWidget.setCurrentWidget(self.page_shape)
+        ))
         self.pushButton_5.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.page_sobre))
+
+        # Botões para entrar em funcionalidades de cada usina
+        self.pushButton_11.clicked.connect(lambda: self.stackedWidget_3.setCurrentWidget(self.page_5))
+        self.pushButton_8.clicked.connect(lambda: self.stackedWidget_3.setCurrentWidget(self.page_2))
+        self.pushButton_10.clicked.connect(lambda: self.stackedWidget_3.setCurrentWidget(self.page_4))
+        self.pushButton_3.clicked.connect(lambda: self.stackedWidget_3.setCurrentWidget(self.page_3))
+
+        # Botões de voltar
+        self.btn_back_1.clicked.connect(lambda: (self.stackedWidget_3.setCurrentWidget(self.page)))
+        self.btn_back_2.clicked.connect(lambda: (self.stackedWidget_3.setCurrentWidget(self.page)))
+        self.btn_back_3.clicked.connect(lambda: (self.stackedWidget_3.setCurrentWidget(self.page)))
+        self.btn_back_LRV_1.clicked.connect(lambda: (self.stackedWidget_3.setCurrentWidget(self.page)))
+        self.btn_back_LRV_3.clicked.connect(lambda: (self.stackedWidget_3.setCurrentWidget(self.page)))
+        self.btn_back_SUP.clicked.connect(lambda: (self.stackedWidget_3.setCurrentWidget(self.page)))
 
         # Variáveis para armazenar os dados do shapefile
         self.gdf = None
         self.gdf_atributos = None
-        # self.sicarmt = None
 
         # Botao para abrir arquivos Excel
         self.btn_import.clicked.connect(lambda: self.abrir_arquivos("", self.tableWidget))
@@ -166,27 +184,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Botao para abrir Planilha de Dados        
         self.btn_planilha_dados.clicked.connect(lambda: self.abrir_arquivos("DATA", self.tableWidget_2))
+        self.btn_planilha_dados_LRV.clicked.connect(lambda: self.abrir_arquivos("DATA", self.tableWidget_LRV_dados))
 
         # Botão para entrar no filtro
-        self.btn_filtrar.clicked.connect(self.show_filter_menu)
+        self.filtered_rows_SRS = []
+        self.btn_filtrar.clicked.connect(lambda: self.show_filter_menu(self.tableWidget_2, self.frame_filter, self.select_column))
         self.frame_filter.hide()
-        self.filtered_rows = []
+
+        self.filtered_rows_LRV = []
+        self.btn_filtrar_LRV.clicked.connect(lambda: self.show_filter_menu(self.tableWidget_LRV_dados, self.frame_filter_2, self.select_column_LRV))
+        self.frame_filter_2.hide()
 
         # Botão pra aparecer a tabela de acordo com o filtro
-        self.column_index = -1
-        self.select_column.currentIndexChanged.connect(self.column_selected)
+        self.column_index_SRS = -1
+        self.column_index_LRV = -1
+        self.select_column.currentIndexChanged.connect(lambda: setattr(self, 'column_index_SRS', self.column_selected(self.select_column)))
+        self.select_column_LRV.currentIndexChanged.connect(lambda: setattr(self, 'column_index_LRV', self.column_selected(self.select_column_LRV)))
+        
+        self.filtered_rows = {}  # Dicionário para armazenar os índices das linhas filtradas para cada tabela
 
         # Conecte a função intermediária ao sinal clicked do botão
-        self.btn_okfilter.clicked.connect(self.filtred)
+        self.btn_okfilter.clicked.connect(lambda: self.filtred(self.filtered_rows_LRV, self.search_filter, self.tableWidget_2, self.column_index_SRS))
+        self.btn_okfilter_LRV.clicked.connect(lambda: self.filtred(self.filtered_rows_SRS, self.search_filter_LRV, self.tableWidget_LRV_dados, self.column_index_LRV))
 
         # Importando SICAR-MT
         self.btn_sicar.clicked.connect(self.abrir_sicarmt)
 
         # Desabilitar o botão btn_selectCAR inicialmente
-        self.btn_selectCAR.setEnabled(False)
+        self.btn_selectCAR_SRS.setEnabled(False)
+        self.btn_selectCAR_LRV.setEnabled(False)
 
         # Selecionando as linhas de dentro do SicarMT de acordo com o que é visivel na tabela de Dados principal
-        self.btn_selectCAR.clicked.connect(self.seletionCARs)
+        self.btn_selectCAR_SRS.clicked.connect(lambda: self.seletionCARs(self.filtered_rows_SRS, self.tableWidget_2))
+        self.btn_selectCAR_LRV.clicked.connect(lambda: self.seletionCARs(self.filtered_rows_LRV, self.tableWidget_LRV_dados))
         self.label_aguarde.hide()
         self.progressBar_sicar.hide()
         self.progressBar_sicar.setRange(0, 100)
@@ -200,10 +230,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Importando dados da tabela filtrada para o shape safra
         self.importDataSafra.clicked.connect(self.transfer_data_for_safra)
         self.exportSHPSafra.clicked.connect(lambda: self.exportar_shp_da_tabela(self.tableWidget_4, "SAFRA"))
-
-        # Informações da usina
-        self.usina_info.hide()
-        self.usina_name.hide()
 
     def gerar_codigo_sup(self):
         # Obter os dados da tabela widget
@@ -388,68 +414,78 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # Salvar o DataFrame como um arquivo Excel
             df.to_excel(fileName, index=False)
 
-    def show_filter_menu(self):
+    def show_filter_menu(self, tablewidget, framefilter, select_column):
         # Verifica se há uma tabela no tableWidget_2
-        if self.tableWidget_2.rowCount() > 0 and self.tableWidget_2.columnCount() > 0:
+        if tablewidget.rowCount() > 0 and tablewidget.columnCount() > 0:
             # Limpa as opções anteriores do combobox
-            self.select_column.clear()
+            select_column.clear()
             # Preenche as opções do combobox com os nomes das colunas da tabela
-            for col in range(self.tableWidget_2.columnCount()):
-                column_name = self.tableWidget_2.horizontalHeaderItem(col).text()
+            for col in range(tablewidget.columnCount()):
+                column_name = tablewidget.horizontalHeaderItem(col).text()
                 if column_name == "Qual o código de identificação do Grupo?":
                     column_name = "ID"
-                self.select_column.addItem(column_name)
+                select_column.addItem(column_name)
             # Exibe o frame do filtro
-            self.frame_filter.show()
+            framefilter.show()
         else:
             # Se não houver tabela, oculta o frame do filtro
-            self.frame_filter.hide()
+            framefilter.hide()
 
-    def column_selected(self):
-        # Atualiza column_index quando uma coluna é selecionada no combobox
-        self.column_index = self.select_column.currentIndex()
+    def column_selected(self, select_column):
+        # Retorna o índice da coluna selecionada no combobox
+        return select_column.currentIndex()
 
-    def filtred(self):
-        self.filtered_rows.clear()
+    def filtred(self, search_filter, tablewidget, column_index):
         # Limpa o filtro anterior antes de aplicar o novo filtro
-        self.clear_filter()
+        self.clear_filter(tablewidget)
 
         # Obtém o texto de filtro do lineedit
-        filter_text = self.search_filter.text().lower()
-        print(filter_text, " em ", self.column_index)
+        filter_text = search_filter.text().lower()
+        print(filter_text, " em ", column_index)
         
         # Lista para armazenar as linhas filtradas
         filtered = []
 
         # Verifica se um índice de coluna válido foi selecionado
-        if self.column_index >= 0:
+        if column_index >= 0:
             # Itera sobre as linhas da tabela
-            for row in range(self.tableWidget_2.rowCount()):
+            for row in range(tablewidget.rowCount()):
                 # Obtém o item da célula na coluna selecionada e linha atual
-                item = self.tableWidget_2.item(row, self.column_index)
+                item = tablewidget.item(row, column_index)
                 if item:
                     # Verifica se o texto de filtro está presente no texto do item (ignorando maiúsculas/minúsculas)
                     if filter_text in item.text().lower():
                         # Adiciona o número da linha à lista de linhas filtradas
                         filtered.append(row)
                         # Exibe a linha se o texto de filtro estiver presente
-                        self.tableWidget_2.setRowHidden(row, False)
+                        tablewidget.setRowHidden(row, False)
                     else:
                         # Oculta a linha se o texto de filtro não estiver presente
-                        self.tableWidget_2.setRowHidden(row, True)
-            for item in filtered:
-                self.filtered_rows.append(item)
-
-            else:
-                # Se não houver linhas filtradas, oculta o label
-                self.usina_name.hide()
+                        tablewidget.setRowHidden(row, True)
+            self.filtered_rows[tablewidget] = filtered  # Armazena as linhas filtradas para esta tabela
 
         else:
             # Se nenhum índice de coluna válido foi selecionado, exibe todas as linhas da tabela
-            for row in range(self.tableWidget_2.rowCount()):
+            for row in range(tablewidget.rowCount()):
                 # Adiciona o número da linha à lista de linhas filtradas
                 filtered.append(row)
-                self.tableWidget_2.setRowHidden(row, False)
+                tablewidget.setRowHidden(row, False)
+            self.filtered_rows[tablewidget] = filtered  # Armazena as linhas filtradas para esta tabela
+
+    def clear_filter(self, tablewidget):
+        # Limpa o filtro anterior e exibe todas as linhas da tabela
+        tablewidget.setRowCount(tablewidget.rowCount())
+        tablewidget.setColumnCount(tablewidget.columnCount())
+        for row in range(tablewidget.rowCount()):
+            tablewidget.setRowHidden(row, False)
+
+    def restore_filter(self, tablewidget):
+        # Restaura o filtro anterior, se existir, para a tabela atual
+        if tablewidget in self.filtered_rows:
+            filtered = self.filtered_rows[tablewidget]
+            for row in range(tablewidget.rowCount()):
+                if row not in filtered:
+                    tablewidget.setRowHidden(row, True)
 
     def clear_filter(self):
         # Exibe todas as linhas da tabela antes de aplicar um novo filtro
@@ -496,24 +532,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Você pode fazer qualquer coisa que precise com o sicarmt aqui
         # Por exemplo, você pode atribuí-lo a uma variável de instância para acessá-lo posteriormente
         self.sicarmt = sicarmt
-        self.btn_selectCAR.setEnabled(True)
+        self.btn_selectCAR_LRV.setEnabled(True)
+        self.btn_selectCAR_SRS.setEnabled(True)
 
-    def seletionCARs(self):
+    def seletionCARs(self, filtered_rows, tablewidget):
         CAR = "Informe os códigos de CARs do Grupo"
         # Verificar se self.sicarmt está definido antes de usá-lo
         if hasattr(self, 'sicarmt'):
             car_column_index = None
-            for column in range(self.tableWidget_2.columnCount()):
-                if self.tableWidget_2.horizontalHeaderItem(column).text() == CAR:
+            for column in range(tablewidget.columnCount()):
+                if tablewidget.horizontalHeaderItem(column).text() == CAR:
                     car_column_index = column
                     break
 
             if car_column_index is not None:
                 car_values = []
                 # Iterar apenas sobre as linhas filtradas
-                for row in self.filtered_rows:
+                for row in filtered_rows:
                     print(row)
-                    item = self.tableWidget_2.item(row, car_column_index)
+                    item = tablewidget.item(row, car_column_index)
                     if item is not None:
                         car_values.append(item.text())
 
@@ -642,7 +679,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             print("Valor não reconhecido para exportação.")
 
-    def transfer_data_for_safra(self):
+    def transfer_data_for_safra(self, filtered_rows):
         # Mapeando as colunas a serem copiadas de tableWidget_2 para tableWidget_4
         columns_mapping = {
             "O Grupo pertence a qual usina?": 1,
@@ -670,7 +707,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Transferir apenas os itens visíveis da tableWidget_2 para tableWidget_4
         row_position = 0  # Posição da linha na tableWidget_4
-        for i in self.filtered_rows:
+        for i in filtered_rows:
             for source_col_name, target_col_index in columns_mapping.items():
                 try:
                     # Obter o índice da coluna em tableWidget_2
@@ -701,10 +738,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         column_index = 1  # Índice da coluna de interesse
         if self.tableWidget_4.rowCount() > 0:
             name_usina = self.tableWidget_4.item(0, column_index).text()
-            self.usina_name.setText(name_usina)
-
-        self.usina_info.show()
-        self.usina_name.show()
 
     def closeEvent(self, event):
         event.accept()

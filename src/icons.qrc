@@ -2,6 +2,7 @@
 <RCC version="1.0">
     <qresource>
         <file>icons_/logo_arquea.png</file>
+        <file>icons_/ARQUEA.png</file>
         <file>icons_/logo_arquea_completo.png</file>
         <file>icons_/logo_301x30330.png</file>
         <file>icons_/menu-bar.png</file>

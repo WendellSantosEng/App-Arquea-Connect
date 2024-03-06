@@ -17,24 +17,27 @@ Uso exclusivo da equipe Arquea, porém no futuro se expanda
 
 import sys
 import io
+import os
 from typing import cast
 import threading
 import time
 import datetime
-
-from PySide6.QtCore import QCoreApplication, QPropertyAnimation, QEasingCurve, QObject, Signal, QThread, Qt, QDate
-from PySide6.QtGui import QKeyEvent, QIcon
-from PySide6.QtWidgets import (QApplication, QMainWindow, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog)
-from PySide6.QtWebEngineWidgets import QWebEngineView
+import csv
+import qdarkstyle
+from PySide6.QtCore import QCoreApplication, QPropertyAnimation, QEasingCurve, QObject, Signal, QUrl
+from PySide6.QtGui import QIcon, QDesktopServices
+from PySide6.QtWidgets import (QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QFileDialog, QMessageBox)
 import pandas as pd
 import geopandas as gpd
-from shapely.geometry import Polygon, GeometryCollection
+from shapely.geometry import Polygon
 from shapely.wkt import loads
 import shapely
 from codsup import codigo_supressao
 from openpyxl import Workbook, load_workbook
+from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.utils.dataframe import dataframe_to_rows
 from mainwindow import Ui_MainWindow
+
 
 class ShapefileLoader(QObject):
     progress_updated = Signal(int)
@@ -168,7 +171,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.gdf_atributos = None
 
         # Botao para abrir arquivos Excel
-        self.btn_import.clicked.connect(lambda: self.abrir_arquivos("", self.tableWidget))
+        self.btn_import.clicked.connect(lambda: self.abrir_arquivos("",None, None, self.tableWidget))
 
         # Botao para abrir arquivos Shapefile
         self.btn_importshp.clicked.connect(self.abrir_shp)
@@ -183,8 +186,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_savedshp.clicked.connect(lambda: self.exportar_shp_da_tabela(self.tableWidget, "SUP"))
 
         # Botao para abrir Planilha de Dados        
-        self.btn_planilha_dados.clicked.connect(lambda: self.abrir_arquivos("DATA", self.tableWidget_2))
-        self.btn_planilha_dados_LRV.clicked.connect(lambda: self.abrir_arquivos("DATA", self.tableWidget_LRV_dados))
+        self.btn_planilha_dados.clicked.connect(lambda: self.abrir_arquivos("DATA", self.tableWidget_2, self.tableWidget_LRV_dados))
+        self.btn_planilha_dados_LRV.clicked.connect(lambda: self.abrir_arquivos("DATA", self.tableWidget_2, self.tableWidget_LRV_dados))
+        
+        self.df_SRS = None
+        self.df_LRV = None
 
         # Botão para entrar no filtro
         self.filtered_rows_SRS = []
@@ -204,8 +210,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.filtered_rows = {}  # Dicionário para armazenar os índices das linhas filtradas para cada tabela
 
         # Conecte a função intermediária ao sinal clicked do botão
-        self.btn_okfilter.clicked.connect(lambda: self.filtred(self.filtered_rows_LRV, self.search_filter, self.tableWidget_2, self.column_index_SRS))
-        self.btn_okfilter_LRV.clicked.connect(lambda: self.filtred(self.filtered_rows_SRS, self.search_filter_LRV, self.tableWidget_LRV_dados, self.column_index_LRV))
+        self.btn_okfilter.clicked.connect(lambda: self.filtred(self.search_filter, self.tableWidget_2, self.column_index_SRS))
+        self.btn_okfilter_LRV.clicked.connect(lambda: self.filtred(self.search_filter_LRV, self.tableWidget_LRV_dados, self.column_index_LRV))
 
         # Importando SICAR-MT
         self.btn_sicar.clicked.connect(self.abrir_sicarmt)
@@ -215,8 +221,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_selectCAR_LRV.setEnabled(False)
 
         # Selecionando as linhas de dentro do SicarMT de acordo com o que é visivel na tabela de Dados principal
-        self.btn_selectCAR_SRS.clicked.connect(lambda: self.seletionCARs(self.filtered_rows_SRS, self.tableWidget_2))
-        self.btn_selectCAR_LRV.clicked.connect(lambda: self.seletionCARs(self.filtered_rows_LRV, self.tableWidget_LRV_dados))
+        self.btn_selectCAR_SRS.clicked.connect(lambda: self.seletionCARs(self.df_SRS))
+        self.btn_selectCAR_LRV.clicked.connect(lambda: self.seletionCARs(self.df_LRV))
         self.label_aguarde.hide()
         self.progressBar_sicar.hide()
         self.progressBar_sicar.setRange(0, 100)
@@ -225,11 +231,34 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Exportando como Shp a tabela do SicarMT
         self.gdfSICAR = None
         self.gdf_atributosSICAR = None
-        self.btn_exportCAR.clicked.connect(lambda: self.exportar_shp_da_tabela(self.tableWidget_3, "CAR"))
+        self.shp_car_name = None
+        self.shp_car_year = None
+        self.name_general_safra = None
+        self.btn_exportCAR.clicked.connect(lambda: self.exportar_shp_da_tabela(self.tableWidget_3, "CAR", self.shp_car_name))
 
-        # Importando dados da tabela filtrada para o shape safra
-        self.importDataSafra.clicked.connect(self.transfer_data_for_safra)
-        self.exportSHPSafra.clicked.connect(lambda: self.exportar_shp_da_tabela(self.tableWidget_4, "SAFRA"))
+        self.shp_safra_name_SRS = None
+        self.shp_safra_name_LRV = None
+        self.exportSHPSafra.clicked.connect(lambda: self.exportar_shp_da_tabela(self.tableWidget_4, "SAFRA", self.shp_safra_name_SRS))
+        self.exportSHPSafra_LRV.clicked.connect(lambda: self.exportar_shp_da_tabela(self.tableWidget_LRVsafra, "SAFRA", self.shp_safra_name_LRV))
+
+        self.importDataSafra.clicked.connect(lambda: self.import_data_safra_func(self.df_SRS, self.tableWidget_4))
+        self.importDataSafra_LRV.clicked.connect(lambda: self.import_data_safra_func(self.df_LRV, self.tableWidget_LRVsafra))
+        
+        self.car_values_safra_SRS = []
+        self.car_values_safra_LRV = []
+        self.btn_CSV.clicked.connect(lambda: self.openCsvFile(self.car_values_safra_SRS))
+        self.btn_CSV2.clicked.connect(lambda: self.openCsvFile(self.car_values_safra_LRV))
+
+        self.btn_arquea.clicked.connect(self.open_website_arquea)
+        self.btn_github.clicked.connect(self.open_website_github)
+
+    def open_website_arquea(self):
+        url = "https://arqueageotec.com.br/"
+        QDesktopServices.openUrl(QUrl(url))
+
+    def open_website_github(self):
+        url = "https://github.com/WendellSantosEng/App-Arquea-Connect"
+        QDesktopServices.openUrl(QUrl(url))
 
     def gerar_codigo_sup(self):
         # Obter os dados da tabela widget
@@ -294,25 +323,45 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.animation.setEndValue(newWidth)
         self.animation.setEasingCurve(QEasingCurve.InOutQuart)
         self.animation.start()
-        
-    def abrir_arquivos(self, value, tablewidget):
+    
+    def mostrar_dados_CBX(self, worksheet, tablewidget):
+        if not isinstance(worksheet, Worksheet):
+            print("Erro: O objeto não é uma instância válida de Worksheet")
+            return
+
+        dados = []
+        for linha in worksheet.iter_rows(values_only=True, min_row=2):
+            if not all(cell is None for cell in linha):
+                dados.append(linha)
+
+        if dados:
+            # Exiba os dados na tabela widget
+            tablewidget.setRowCount(len(dados))
+            tablewidget.setColumnCount(len(HEADERS_DATA))
+            for i, linha in enumerate(dados):
+                for j, valor in enumerate(linha):
+                    item = QTableWidgetItem(str(valor))
+                    tablewidget.setItem(i, j, item)
+
+            # Adicione os cabeçalhos das colunas
+            tablewidget.setHorizontalHeaderLabels(HEADERS_DATA)
+
+    def abrir_arquivos(self, value, tablewidgetSRS: QTableWidget = None, tablewidgetLRV: QTableWidget = None, tablewidget: QTableWidget = None):
         options = QFileDialog.Options()
         fileName, _ = QFileDialog.getOpenFileName(self, "Abrir Arquivo Excel", "", "Arquivos Excel (*.xlsx *.xls)", options=options)
         if fileName:
             workbook = load_workbook(fileName)
-            # Renomear a aba para "Codigos Car" se ela existir
-            if "Codigos Car" in workbook.sheetnames:
-                worksheet = workbook["Codigos Car"]
-                worksheet.title = "Codigos Car"  # Renomear a aba
+            if value == "DATA":
+                if "SRS - ENTRADA DE DADOS" in workbook.sheetnames:
+                    worksheet_srs = workbook["SRS - ENTRADA DE DADOS"]
+                    self.mostrar_dados_CBX(worksheet_srs, tablewidgetSRS)
+                if "LRV - ENTRADA DE DADOS" in workbook.sheetnames:
+                    worksheet_lrv = workbook["LRV - ENTRADA DE DADOS"]
+                    self.mostrar_dados_CBX(worksheet_lrv, tablewidgetLRV)
             else:
-                # Se a aba não existir, você pode criar uma nova aba com esse nome ou tratar de outra maneira
-                pass
-        if value == "DATA":
-            # Transformar a coluna "DATA" em uma string com dia;mes;ano
-            self.transformar_coluna_data_str(workbook)
-
-        # Mostrar dados na tabela
-        self.mostrar_dados(workbook, tablewidget)
+                if tablewidget is not None:
+                    # Mostrar dados na tabela especificada
+                    self.mostrar_dados(tablewidget, tablewidget)
 
     def parse_coordinates(self, coord_str):
         coords = []
@@ -436,48 +485,87 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return select_column.currentIndex()
 
     def filtred(self, search_filter, tablewidget, column_index):
-        # Limpa o filtro anterior antes de aplicar o novo filtro
-        self.clear_filter(tablewidget)
-
         # Obtém o texto de filtro do lineedit
         filter_text = search_filter.text().lower()
         print(filter_text, " em ", column_index)
-        
-        # Lista para armazenar as linhas filtradas
-        filtered = []
 
+        if tablewidget is self.tableWidget_2:
+            # DataFrame para armazenar os dados filtrados
+            self.df_SRS = pd.DataFrame(columns=[str(tablewidget.horizontalHeaderItem(col).text()) for col in range(tablewidget.columnCount())])
+        if tablewidget is self.tableWidget_LRV_dados:
+            # DataFrame para armazenar os dados filtrados
+            self.df_LRV = pd.DataFrame(columns=[str(tablewidget.horizontalHeaderItem(col).text()) for col in range(tablewidget.columnCount())])
+            
+        # Verifica se um índice de coluna válido foi selecionado
         # Verifica se um índice de coluna válido foi selecionado
         if column_index >= 0:
             # Itera sobre as linhas da tabela
             for row in range(tablewidget.rowCount()):
-                # Obtém o item da célula na coluna selecionada e linha atual
-                item = tablewidget.item(row, column_index)
-                if item:
-                    # Verifica se o texto de filtro está presente no texto do item (ignorando maiúsculas/minúsculas)
-                    if filter_text in item.text().lower():
-                        # Adiciona o número da linha à lista de linhas filtradas
-                        filtered.append(row)
-                        # Exibe a linha se o texto de filtro estiver presente
-                        tablewidget.setRowHidden(row, False)
-                    else:
-                        # Oculta a linha se o texto de filtro não estiver presente
-                        tablewidget.setRowHidden(row, True)
-            self.filtered_rows[tablewidget] = filtered  # Armazena as linhas filtradas para esta tabela
-
+                # Variável para verificar se a linha está vazia
+                is_row_empty = True
+                
+                # Variável para verificar se a linha atende aos critérios de filtro
+                passes_filter = False
+                
+                # Itera sobre as colunas da linha atual
+                for col in range(tablewidget.columnCount()):
+                    # Verifica se há um item não vazio na célula
+                    item = tablewidget.item(row, col)
+                    if item and item.text():
+                        is_row_empty = False
+                        # Verifica se o texto da célula atende ao critério de filtro
+                        if filter_text in item.text().lower():
+                            passes_filter = True
+                            break  # Se encontrar um item que atende ao filtro, sai do loop
+                
+                # Exibe a linha se atender aos critérios de filtro e não estiver vazia
+                if not is_row_empty and passes_filter:
+                    tablewidget.setRowHidden(row, False)
+                    # Adiciona os dados da linha ao DataFrame correspondente
+                    row_data = []
+                    for col in range(tablewidget.columnCount()):
+                        if not tablewidget.isColumnHidden(col):
+                            row_data.append(tablewidget.item(row, col).text())
+                    if tablewidget is self.tableWidget_2:
+                        self.df_SRS.loc[len(self.df_SRS)] = row_data
+                    elif tablewidget is self.tableWidget_LRV_dados:
+                        self.df_LRV.loc[len(self.df_LRV)] = row_data
+                else:
+                    # Oculta a linha se não atender aos critérios de filtro ou estiver vazia
+                    tablewidget.setRowHidden(row, True)
         else:
             # Se nenhum índice de coluna válido foi selecionado, exibe todas as linhas da tabela
             for row in range(tablewidget.rowCount()):
-                # Adiciona o número da linha à lista de linhas filtradas
-                filtered.append(row)
                 tablewidget.setRowHidden(row, False)
-            self.filtered_rows[tablewidget] = filtered  # Armazena as linhas filtradas para esta tabela
+        
+        # Restaura o estado filtrado anterior, se existir
+        self.restore_filter(tablewidget)
 
-    def clear_filter(self, tablewidget):
-        # Limpa o filtro anterior e exibe todas as linhas da tabela
-        tablewidget.setRowCount(tablewidget.rowCount())
-        tablewidget.setColumnCount(tablewidget.columnCount())
-        for row in range(tablewidget.rowCount()):
-            tablewidget.setRowHidden(row, False)
+        NOME = "Qual o nome do Grupo a ser informado?"
+        ANO = "Qual o ano da safra analisada?"
+
+        if self.df_SRS is not None:
+            self.shp_safra_name_SRS = self.df_SRS[NOME].iloc[0]
+            self.shp_safra_name_SRS = self.shp_safra_name_SRS.replace(" ", "_")
+            year = self.df_SRS[ANO].iloc[0]
+            self.shp_safra_name_SRS = self.shp_safra_name_SRS + "_" + str(year)
+
+        if self.df_LRV is not None:
+            self.shp_safra_name_LRV = self.df_LRV[NOME].iloc[0]
+            self.shp_safra_name_LRV = self.shp_safra_name_LRV.replace(" ", "_")
+            year = self.df_LRV[ANO].iloc[0]
+            self.shp_safra_name_LRV = self.shp_safra_name_LRV + "_" + str(year)
+
+        if tablewidget is self.tableWidget_2:
+            self.name_general_safra = self.shp_safra_name_SRS
+            print("DENTRO SRS: ", self.name_general_safra)
+        elif tablewidget is self.tableWidget_LRV_dados:
+            self.name_general_safra = self.shp_safra_name_LRV
+            print("DENTRO LRV: ", self.name_general_safra)
+        
+        # Imprime o DataFrame
+        print("SRS: ",self.df_SRS)
+        print("LRV: ",self.df_LRV)
 
     def restore_filter(self, tablewidget):
         # Restaura o filtro anterior, se existir, para a tabela atual
@@ -486,11 +574,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             for row in range(tablewidget.rowCount()):
                 if row not in filtered:
                     tablewidget.setRowHidden(row, True)
-
-    def clear_filter(self):
-        # Exibe todas as linhas da tabela antes de aplicar um novo filtro
-        for row in range(self.tableWidget_2.rowCount()):
-            self.tableWidget_2.setRowHidden(row, False)
 
     def abrir_sicarmt(self):
         sicar_path, _ = QFileDialog.getOpenFileName(None, "Selecionar Shapefile", "", "Arquivos Shapefile (*.shp)")
@@ -535,59 +618,48 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_selectCAR_LRV.setEnabled(True)
         self.btn_selectCAR_SRS.setEnabled(True)
 
-    def seletionCARs(self, filtered_rows, tablewidget):
+    def seletionCARs(self, df):
         CAR = "Informe os códigos de CARs do Grupo"
-        # Verificar se self.sicarmt está definido antes de usá-lo
-        if hasattr(self, 'sicarmt'):
-            car_column_index = None
-            for column in range(tablewidget.columnCount()):
-                if tablewidget.horizontalHeaderItem(column).text() == CAR:
-                    car_column_index = column
-                    break
+        NOME = "Qual o nome do Grupo a ser informado?"
+        ANO = "Qual o ano da safra analisada?"
 
-            if car_column_index is not None:
-                car_values = []
-                # Iterar apenas sobre as linhas filtradas
-                for row in filtered_rows:
-                    print(row)
-                    item = tablewidget.item(row, car_column_index)
-                    if item is not None:
-                        car_values.append(item.text())
+        if not isinstance(df, pd.DataFrame):
+            df = pd.DataFrame(df)
+        
+        # Verifica se a coluna CAR está presente no DataFrame
+        if CAR in df.columns:
 
-                # Verificar se car_values não está vazio
-                if car_values:
-                    # Selecionar as linhas correspondentes no DataFrame Geopandas 'sicarmt'
-                    selected_rows = pd.DataFrame()
-                    print("car_values:", car_values)
+            self.shp_car_name = df[NOME].iloc[0]
+            self.shp_car_year = df[ANO].iloc[0]
+            self.shp_car_name = self.shp_car_name.replace(" ","_")
+            self.shp_car_name = "CAR_" + self.shp_car_name + "_" + self.shp_car_year
+            print()
+            print("CAR NAME: ",self.shp_car_name)
+            print()
 
-                    # Converter car_values para o mesmo tipo de dados da coluna 'CAR' em sicarmt
-                    car_values_set = set(car_values)
-                    car_values_filtered = [value for value in self.sicarmt['cod_imovel'].unique() if value in car_values_set]
+            car_values_df = df[CAR].unique()  # Obtém os valores únicos da coluna CAR
 
-                    for car_value in car_values_filtered:
-                        selected_rows = pd.concat([selected_rows, self.sicarmt[self.sicarmt['cod_imovel'] == car_value]])
+            # Filtra as linhas do GeoDataFrame sicarmt que possuem valores presentes na coluna CAR do DataFrame
+            selected_rows = self.sicarmt[self.sicarmt['cod_imovel'].isin(car_values_df)]
 
-                    print("selected_rows:", selected_rows)
+            # Limpa a tabelaWidget_3
+            self.tableWidget_3.clear()
+            
+            # Define o número de linhas e colunas na tabelaWidget_3
+            self.tableWidget_3.setRowCount(selected_rows.shape[0])
+            self.tableWidget_3.setColumnCount(selected_rows.shape[1])
 
-                    # Limpar e preencher a tableWidget_3 com os resultados
-                    self.tableWidget_3.clear()
-                    self.tableWidget_3.setRowCount(selected_rows.shape[0])
-                    self.tableWidget_3.setColumnCount(selected_rows.shape[1])
-
-                    # Atribuir os nomes de coluna originais após a seleção
-                    self.tableWidget_3.setHorizontalHeaderLabels(self.column_names)
-
-                    for i, row in enumerate(selected_rows.iterrows()):
-                        for j, value in enumerate(row[1]):
-                            item = QTableWidgetItem(str(value))
-                            self.tableWidget_3.setItem(i, j, item)
-                else:
-                    print("Nenhum valor de CAR encontrado na tabela.")
-            else:
-                print("A coluna 'CAR' não foi encontrada na tabela.")
+            # Define os cabeçalhos da tabelaWidget_3 usando a lista 'headers'
+            self.tableWidget_3.setHorizontalHeaderLabels(HEADER_CAR)
+            
+            # Preenche a tabelaWidget_3 com os dados do DataFrame selected_rows
+            for i, row in enumerate(selected_rows.iterrows()):
+                for j, value in enumerate(row[1]):
+                    item = QTableWidgetItem(str(value))
+                    self.tableWidget_3.setItem(i, j, item)
         else:
-            print("O shapefile ainda não foi carregado completamente.")
-    
+            print("A coluna 'CAR' não está presente no DataFrame.")
+
     def extrair_dados_da_tabela(self, tablewidget):
         data = []
         header_items = [tablewidget.horizontalHeaderItem(column).text() for column in range(tablewidget.columnCount())]
@@ -603,20 +675,66 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             data.append(row_data)
             
         return data, header_items
+    
+    def makedir_shp(self, new_folder_path):
+        os.mkdir(new_folder_path)
 
-    def exportar_shp_da_tabela(self, tablewidget, value):
+    def exportar_shp_da_tabela(self, tablewidget, value, nome_shp_safra: str | None):
         if value == "CAR":
-            data, header_items = self.extrair_dados_da_tabela(tablewidget)
-            shp_path, _ = QFileDialog.getSaveFileName(None, "Salvar Shapefile", "", "Arquivos Shapefile (*.shp)")
-            if shp_path:
-                df = pd.DataFrame(data, columns=header_items)
+            data = []
+            for row in range(tablewidget.rowCount()):
+                row_data = []
+                for column in range(tablewidget.columnCount()):
+                    cell_item = tablewidget.item(row, column)
+                    if cell_item is not None:
+                        row_data.append(cell_item.text())
+                    else:
+                        row_data.append("")  
+                data.append(row_data)
+
+            # Pergunta ao usuário se deseja criar as pastas necessárias
+            resposta = QMessageBox.question(self, "Criar Pastas", "Deseja criar as pastas necessárias?",
+                                            QMessageBox.Yes | QMessageBox.No)
+            
+            # Se o usuário clicou em 'Sim', cria as pastas
+            if resposta == QMessageBox.Yes:
+                # Seleciona o diretório onde os arquivos serão salvos
+                shp_dir = QFileDialog.getExistingDirectory(self, "Selecione o diretório para salvar Shapefile")
+                
+                if shp_dir:
+                    # Cria a estrutura de diretórios necessária
+                    shp_folder = os.path.join(shp_dir, nome_shp_safra)
+                    car_dir = os.path.join(shp_folder, f"CAR_{nome_shp_safra[-4:]}")
+                    safra_dir = os.path.join(shp_folder, f"SAFRA_{nome_shp_safra[-4:]}")
+                    
+                    if not os.path.exists(shp_folder):
+                        os.mkdir(shp_folder)
+                    if not os.path.exists(car_dir):
+                        os.mkdir(car_dir)
+                    if not os.path.exists(safra_dir):
+                        os.mkdir(safra_dir)
+                    
+                    car_name = "CAR_" + nome_shp_safra
+                    # Caminho completo para salvar o arquivo na pasta CAR
+                    shp_path = os.path.join(car_dir, f"{car_name}.shp")
+                    
+                    df = pd.DataFrame(data, columns=HEADER_CAR)
+                    df['geometry'] = None
+                    gdf = gpd.GeoDataFrame(df, geometry=[shapely.geometry.Polygon() for _ in range(len(df))])
+                    gdf.crs = 'EPSG:4674'
+                    gdf.to_file(shp_path, driver='ESRI Shapefile')
+
+            # Se o usuário clicou em 'Não', pede apenas para selecionar a pasta de destino
+            elif resposta == QMessageBox.No:
+                shp_path, _ = QFileDialog.getSaveFileName(self, "Salvar Shapefile", nome_shp_safra, "Arquivos Shapefile (*.shp)")
+                if shp_path:
+                    df = pd.DataFrame(data, columns=HEADER_CAR)
+                    df['geometry'] = None
+                    gdf = gpd.GeoDataFrame(df, geometry=[shapely.geometry.Polygon() for _ in range(len(df))])
+                    gdf.to_file(shp_path, driver='ESRI Shapefile')
 
                 if 'polygon' in df.columns:
-                    print("TEM POLYGON")
                     try:
-                        print("try entrou")
-                        print(df)
-
                         df['geometry'] = df['polygon'].apply(lambda coords: shapely.geometry.Polygon(self.parse_coordinates(coords)) if isinstance(coords, str) else None)
 
                         # Remover linhas com geometria inválida
@@ -627,6 +745,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                         # Criar um GeoDataFrame a partir do DataFrame 'df'
                         gdf = gpd.GeoDataFrame(df)
+                        gdf.crs = 'EPSG:4674'
                     except NameError:
                         print("Erro ao criar geometria. Verifique se o pacote shapely está corretamente importado.")
                         return
@@ -637,12 +756,46 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         elif value == "SAFRA":
             data, header_items = self.extrair_dados_da_tabela(tablewidget)
             data = [row for row in data if all(item is not None for item in row)]  # Remover linhas com células vazias
-            shp_path, _ = QFileDialog.getSaveFileName(self, "Salvar Shapefile", "", "Arquivos Shapefile (*.shp)")
-            if shp_path:
-                df = pd.DataFrame(data, columns=header_items)
-                df['geometry'] = None
-                gdf = gpd.GeoDataFrame(df, geometry=[shapely.geometry.Polygon() for _ in range(len(df))])
-                gdf.to_file(shp_path, driver='ESRI Shapefile')
+            # Pergunta ao usuário se deseja criar as pastas necessárias
+            resposta = QMessageBox.question(self, "Criar Pastas", "Deseja criar as pastas necessárias?",
+                                            QMessageBox.Yes | QMessageBox.No)
+            
+            # Se o usuário clicou em 'Sim', cria as pastas
+            if resposta == QMessageBox.Yes:
+                # Seleciona o diretório onde os arquivos serão salvos
+                shp_dir = QFileDialog.getExistingDirectory(self, "Selecione o diretório para salvar Shapefile")
+                
+                if shp_dir:
+                    # Cria a estrutura de diretórios necessária
+                    shp_folder = os.path.join(shp_dir, nome_shp_safra)
+                    car_dir = os.path.join(shp_folder, f"CAR_{nome_shp_safra[-4:]}")
+                    safra_dir = os.path.join(shp_folder, f"SAFRA_{nome_shp_safra[-4:]}")
+                    
+                    if not os.path.exists(shp_folder):
+                        os.mkdir(shp_folder)
+                    if not os.path.exists(car_dir):
+                        os.mkdir(car_dir)
+                    if not os.path.exists(safra_dir):
+                        os.mkdir(safra_dir)
+                    
+                    # Caminho completo para salvar o arquivo na pasta CAR
+                    shp_path = os.path.join(safra_dir, f"{nome_shp_safra}.shp")
+                    
+                    df = pd.DataFrame(data, columns=header_items)
+                    df['geometry'] = None
+                    gdf = gpd.GeoDataFrame(df, geometry=[shapely.geometry.Polygon() for _ in range(len(df))])
+                    gdf.crs = 'EPSG:4674'
+                    gdf.to_file(shp_path, driver='ESRI Shapefile')
+
+            # Se o usuário clicou em 'Não', pede apenas para selecionar a pasta de destino
+            elif resposta == QMessageBox.No:
+                shp_path, _ = QFileDialog.getSaveFileName(self, "Salvar Shapefile", nome_shp_safra, "Arquivos Shapefile (*.shp)")
+                if shp_path:
+                    df = pd.DataFrame(data, columns=header_items)
+                    df['geometry'] = None
+                    gdf = gpd.GeoDataFrame(df, geometry=[shapely.geometry.Polygon() for _ in range(len(df))])
+                    gdf.crs = 'EPSG:4674'
+                    gdf.to_file(shp_path, driver='ESRI Shapefile')
 
         elif value == "SUP":
             data, header_items = self.extrair_dados_da_tabela(tablewidget)
@@ -653,11 +806,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 df.rename(columns={'geometry': 'polygon'}, inplace=True)
 
                 if 'polygon' in df.columns:
-                    print("TEM POLYGON")
                     try:
-                        print("try entrou")
-                        print(df)
-
                         df['geometry'] = df['polygon'].apply(lambda coords: shapely.geometry.Polygon(self.parse_coordinates(coords)) if isinstance(coords, str) else None)
 
                         # Remover linhas com geometria inválida
@@ -679,8 +828,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             print("Valor não reconhecido para exportação.")
 
-    def transfer_data_for_safra(self, filtered_rows):
-        # Mapeando as colunas a serem copiadas de tableWidget_2 para tableWidget_4
+    def import_data_safra_func(self, df, tablewidget):
+        
         columns_mapping = {
             "O Grupo pertence a qual usina?": 1,
             "Qual o código de identificação do Grupo?": 0,
@@ -691,58 +840,106 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             "DATA": 9,
         }
 
-        headers = []
-        for i in range(self.tableWidget_4.columnCount()):
-            header_item = self.tableWidget_4.horizontalHeaderItem(i)
-            if header_item:
-                headers.append(header_item.text())
-            else:
-                headers.append("")  # Adiciona uma string vazia se não houver um item de cabeçalho
+        headers_from_dict = list(columns_mapping.keys())
 
-        # Limpando tableWidget_4 antes de copiar
-        self.tableWidget_4.clear()
+        # Limpando tableWidget antes de copiar
+        tablewidget.clear()
+        tablewidget.setRowCount(0)
 
-        self.tableWidget_4.setColumnCount(len(headers))
-        self.tableWidget_4.setHorizontalHeaderLabels(headers)
+        headers = [
+            "COD_PRODUT", "PLANT_USIN", "NOM_PRODUT", "CPF_CNPJ", "ANO_SAFRA", "TIPO", "COD_IMOVEL", "COD_MAPA", "CIDADE",
+            "DATA_REGIS", "SITUACAO", "AREA_TOTAL", "AREA_MAPA", "SUPRESSAO", "ELEGIBILID",
+        ]
 
-        # Transferir apenas os itens visíveis da tableWidget_2 para tableWidget_4
-        row_position = 0  # Posição da linha na tableWidget_4
-        for i in filtered_rows:
+        tablewidget.clear()
+        tablewidget.setColumnCount(len(headers))
+        tablewidget.setHorizontalHeaderLabels(headers)
+        
+        if tablewidget is self.tableWidget_4:
+            self.car_values_safra_SRS.clear
+        elif tablewidget is self.tableWidget_LRVsafra:
+            self.car_values_safra_LRV.clear
+
+        # Transferir os dados do DataFrame para tableWidget_4
+        for row_position, (_, row_data) in enumerate(df.iterrows()):
             for source_col_name, target_col_index in columns_mapping.items():
                 try:
-                    # Obter o índice da coluna em tableWidget_2
-                    source_col_index = [self.tableWidget_2.horizontalHeaderItem(j).text() for j in range(self.tableWidget_2.columnCount())].index(source_col_name)
-                    # Obter o item da célula em tableWidget_2
-                    item = self.tableWidget_2.item(i, source_col_index)
-                    if item:
-                        # Se a linha correspondente não existir em tableWidget_4, crie-a
-                        if row_position >= self.tableWidget_4.rowCount():
-                            self.tableWidget_4.insertRow(row_position)
-                        # Definir o item na célula correspondente em tableWidget_4
-                        self.tableWidget_4.setItem(row_position, target_col_index, QTableWidgetItem(item.text()))
+                    # Obter o valor da coluna no DataFrame
+                    value = row_data[source_col_name]
+                    # Se a linha correspondente não existir em tableWidget_4, crie-a
+                    if row_position >= tablewidget.rowCount():
+                        tablewidget.insertRow(row_position)
+                    # Definir o valor na célula correspondente em tableWidget_4
+                    tablewidget.setItem(row_position, target_col_index, QTableWidgetItem(str(value)))
 
-                         # Verificar se o nome da coluna é "DATA" e imprimir seu valor
-                        if source_col_name == "DATA":
-                            # Obter a data como uma string no formato "y/m/d"
-                            data_y_m_d = datetime.datetime.strptime(item.text(), "%d/%m/%Y").strftime("%Y-%m-%d")
-                            # Substituir o valor original do item pela nova data formatada
-                            self.tableWidget_4.setItem(row_position, target_col_index, QTableWidgetItem(data_y_m_d))
-                        else:
-                            # Manter o valor original do item para outras colunas
-                            self.tableWidget_4.setItem(row_position, target_col_index, QTableWidgetItem(item.text()))
+                    # Verificar se o nome da coluna é "DATA" e formatar seu valor
+                    if source_col_name == "DATA":
+                        data_y_m_d = datetime.datetime.strptime(value, "%d/%m/%Y").strftime("%Y-%m-%d")
+                        tablewidget.setItem(row_position, target_col_index, QTableWidgetItem(data_y_m_d))
                     
+                    # Adicionar o valor da coluna "COD_IMOVEL" à lista
+                    if source_col_name == "Informe os códigos de CARs do Grupo":
+                        if tablewidget is self.tableWidget_4:
+                            self.car_values_safra_SRS.append(value)
+                        elif tablewidget is self.tableWidget_LRVsafra:
+                            self.car_values_safra_LRV.append(value)
+
+                except KeyError as e:
+                    print(f"Erro: Coluna não encontrada no DataFrame - {e}")
                 except ValueError as e:
                     print(f"Erro: {e}")
-            row_position += 1  # Incrementar a posição da linha na tableWidget_4
-        
-        column_index = 1  # Índice da coluna de interesse
-        if self.tableWidget_4.rowCount() > 0:
-            name_usina = self.tableWidget_4.item(0, column_index).text()
+
+        # Exemplo de obtenção do nome da usina
+        column_index = headers_from_dict.index("O Grupo pertence a qual usina?")
+        if tablewidget.rowCount() > 0:
+            name_usina = tablewidget.item(0, column_index).text()
+
+    def openCsvFile(self, list_):
+        options = QFileDialog.Options()
+        fileName, _ = QFileDialog.getOpenFileName(self, "Abrir Arquivo CSV", "", "Arquivos CSV (*.csv)", options=options)
+        if fileName:
+            try:
+                # Especifique os índices das colunas que você deseja ler
+                columns_to_read = [0, 1]  # Exemplo: lendo as colunas 0 e 1
+
+                data_for_car_values = {}
+                # Leia o arquivo CSV e selecione apenas as colunas especificadas pelos índices
+                df = pd.read_csv(fileName, usecols=columns_to_read)
+
+                # Itere sobre as linhas do DataFrame
+                for _, row in df.iterrows():
+                    car = row.iloc[0]  # A primeira coluna
+                    data = row.iloc[1]  # A segunda coluna
+                    if car in list_:
+                        if car not in data_for_car_values:
+                            data_for_car_values[car] = []
+                        data_for_car_values[car].append(data)
+
+                # Exibir dados para o usuário
+                message = ""
+                for car, data in data_for_car_values.items():
+                    message += f"Dados para {car}: {data}\n"
+                QMessageBox.information(self, "Dados de CAR", message)
+            except Exception as e:
+                QMessageBox.critical(self, "Erro", f"Erro ao abrir o arquivo: {e}")
 
     def closeEvent(self, event):
         event.accept()
 
 if __name__ == '__main__':
+
+    HEADER_CAR = [
+        "cod_imovel", "status_imo", "dat_criaca", "area", "condicao", "uf", "municipio", "cod_munic", "m_fiscal",
+        "tipo_imove", "polygon",
+    ]
+    HEADERS_DATA = [
+        "Carimbo de data/hora", "Nome do analista CBX", "O Grupo pertence a qual usina?", "Qual o código de identificação do Grupo?", 
+        "Qual o nome do Grupo a ser informado?", "Qual o CPF/CNPJ do Grupo", "Será enviado shape do Grupo pela CBX?", 
+        "Qual o ano da safra analisada?", "Qual o tipo de processo realizado?", "Observações referente ao processo realizado" , 
+        "Qual a área declarada do Grupo?", "Informe a quantidade de CARs pertencente ao Grupo", 
+        "Informe os códigos de CARs do Grupo", "Endereço de e-mail" , "__PowerAppsId__",
+    ]
+
     app = QApplication(sys.argv)
     mainWindow = MainWindow()
     mainWindow.show()

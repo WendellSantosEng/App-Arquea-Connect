@@ -29,7 +29,7 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(806, 541)
         MainWindow.setStyleSheet(u"*{\n"
-"	background-color: \"#20B2AA\";\n"
+"	background-color: #178B8D;\n"
 "}\n"
 "")
         self.centralwidget = QWidget(MainWindow)
@@ -48,34 +48,39 @@ class Ui_MainWindow(object):
         font = QFont()
         font.setPointSize(9)
         self.left_container.setFont(font)
+        self.left_container.setStyleSheet(u"left_container {\n"
+" 	border-top: 2px solid red;\n"
+"	border-bottom: 2px solid red;\n"
+"}\n"
+"left_container {\n"
+"	border-left: 1px solid blue;\n"
+"	border-right: 1px solid blue;\n"
+"}")
         self.left_container.setFrameShape(QFrame.StyledPanel)
         self.left_container.setFrameShadow(QFrame.Raised)
         self.verticalLayout_2 = QVBoxLayout(self.left_container)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.frame = QFrame(self.left_container)
-        self.frame.setObjectName(u"frame")
-        self.frame.setFrameShape(QFrame.StyledPanel)
-        self.frame.setFrameShadow(QFrame.Raised)
-        self.horizontalLayout_4 = QHBoxLayout(self.frame)
-        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
-        self.label_3 = QLabel(self.frame)
+        self.label_3 = QLabel(self.left_container)
         self.label_3.setObjectName(u"label_3")
+        self.label_3.setStyleSheet(u"image: url(:/icons_/ARQUEA.png);")
 
-        self.horizontalLayout_4.addWidget(self.label_3)
-
-
-        self.verticalLayout_2.addWidget(self.frame)
+        self.verticalLayout_2.addWidget(self.label_3)
 
         self.frame_left = QFrame(self.left_container)
         self.frame_left.setObjectName(u"frame_left")
-        self.frame_left.setStyleSheet(u"#frame_left QPushButton {\n"
-"    background-color: #006400; /* Cor de fundo padr\u00e3o */\n"
+        self.frame_left.setStyleSheet(u"#frame_left  QPushButton {\n"
+"	background-color: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0 rgba(0, 100, 0, 255), stop:1 rgba(0, 50, 0, 255));\n"
 "	color: white;\n"
+"	font-size: 18px;\n"
+"	border-radius: 15px;\n"
+"	border: 2px solid rgba(0, 0, 0, 100);\n"
+"	padding: 10px 20px;\n"
 "}\n"
-"\n"
-"#frame_left QPushButton:hover {\n"
-"    background-color: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1,\n"
-"                                      stop: 0 #006400, stop: 1 #008000); \n"
+"#frame_left  QPushButton:hover {\n"
+"	background-color: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0 rgba(0, 120, 0, 255), stop:1 rgba(0, 70, 0, 255));\n"
+"}\n"
+"#frame_left  QPushButton:pressed {\n"
+"	background-color: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0 rgba(0, 80, 0, 255), stop:1 rgba(0, 40, 0, 255));\n"
 "}")
         self.frame_left.setFrameShape(QFrame.StyledPanel)
         self.frame_left.setFrameShadow(QFrame.Raised)
@@ -93,7 +98,6 @@ class Ui_MainWindow(object):
         self.pushButton_2.setMaximumSize(QSize(120, 16777215))
         font1 = QFont()
         font1.setFamilies([u"Segoe UI"])
-        font1.setPointSize(17)
         font1.setBold(False)
         self.pushButton_2.setFont(font1)
         self.pushButton_2.setStyleSheet(u"")
@@ -104,7 +108,6 @@ class Ui_MainWindow(object):
         self.pushButton_9.setObjectName(u"pushButton_9")
         self.pushButton_9.setMaximumSize(QSize(120, 16777215))
         font2 = QFont()
-        font2.setPointSize(17)
         self.pushButton_9.setFont(font2)
         self.pushButton_9.setStyleSheet(u"margin:5px, 20px,5px,20px;")
 
@@ -144,7 +147,7 @@ class Ui_MainWindow(object):
         self.pushButton.setObjectName(u"pushButton")
         self.pushButton.setMaximumSize(QSize(20, 20))
         self.pushButton.setLayoutDirection(Qt.LeftToRight)
-        self.pushButton.setStyleSheet(u"")
+        self.pushButton.setStyleSheet(u"image: url(:/icons_/menu-bar.png);")
         icon = QIcon()
         icon.addFile(u":/icons/menu-bar.png", QSize(), QIcon.Normal, QIcon.Off)
         self.pushButton.setIcon(icon)
@@ -156,9 +159,6 @@ class Ui_MainWindow(object):
         self.frame_6.setObjectName(u"frame_6")
         self.frame_6.setFrameShape(QFrame.StyledPanel)
         self.frame_6.setFrameShadow(QFrame.Raised)
-        self.label_6 = QLabel(self.frame_6)
-        self.label_6.setObjectName(u"label_6")
-        self.label_6.setGeometry(QRect(220, 0, 201, 16))
 
         self.horizontalLayout_2.addWidget(self.frame_6)
 
@@ -172,7 +172,7 @@ class Ui_MainWindow(object):
         sizePolicy2.setVerticalStretch(0)
         sizePolicy2.setHeightForWidth(self.main_frame.sizePolicy().hasHeightForWidth())
         self.main_frame.setSizePolicy(sizePolicy2)
-        self.main_frame.setStyleSheet(u"background-color: #008B8B;")
+        self.main_frame.setStyleSheet(u"background-color: #178B8D;")
         self.main_frame.setFrameShape(QFrame.StyledPanel)
         self.main_frame.setFrameShadow(QFrame.Raised)
         self.verticalLayout_5 = QVBoxLayout(self.main_frame)
@@ -271,6 +271,7 @@ class Ui_MainWindow(object):
         self.toolBox_usinas.setFrameShape(QFrame.StyledPanel)
         self.USINAS_page = QWidget()
         self.USINAS_page.setObjectName(u"USINAS_page")
+        self.USINAS_page.setGeometry(QRect(0, 0, 562, 215))
         self.verticalLayout_33 = QVBoxLayout(self.USINAS_page)
         self.verticalLayout_33.setObjectName(u"verticalLayout_33")
         self.frame_26 = QFrame(self.USINAS_page)
@@ -291,6 +292,7 @@ class Ui_MainWindow(object):
         self.toolBox_usinas.addItem(self.USINAS_page, u"USINAS")
         self.page_CAR = QWidget()
         self.page_CAR.setObjectName(u"page_CAR")
+        self.page_CAR.setGeometry(QRect(0, 0, 562, 215))
         self.verticalLayout_35 = QVBoxLayout(self.page_CAR)
         self.verticalLayout_35.setObjectName(u"verticalLayout_35")
         self.frame_27 = QFrame(self.page_CAR)
@@ -336,7 +338,7 @@ class Ui_MainWindow(object):
         self.toolBox_usinas.addItem(self.SRS_page, u"SRS")
         self.LRV_page = QWidget()
         self.LRV_page.setObjectName(u"LRV_page")
-        self.LRV_page.setGeometry(QRect(0, 0, 562, 245))
+        self.LRV_page.setGeometry(QRect(0, 0, 562, 215))
         self.verticalLayout_23 = QVBoxLayout(self.LRV_page)
         self.verticalLayout_23.setObjectName(u"verticalLayout_23")
         self.frame_18 = QFrame(self.LRV_page)
@@ -358,6 +360,7 @@ class Ui_MainWindow(object):
         self.toolBox_usinas.addItem(self.LRV_page, u"LRV")
         self.PDL_page = QWidget()
         self.PDL_page.setObjectName(u"PDL_page")
+        self.PDL_page.setGeometry(QRect(0, 0, 562, 215))
         self.verticalLayout_24 = QVBoxLayout(self.PDL_page)
         self.verticalLayout_24.setObjectName(u"verticalLayout_24")
         self.frame_19 = QFrame(self.PDL_page)
@@ -388,11 +391,17 @@ class Ui_MainWindow(object):
         self.horizontalLayout_25.setObjectName(u"horizontalLayout_25")
         self.frame_28 = QFrame(self.page_5)
         self.frame_28.setObjectName(u"frame_28")
+        sizePolicy3 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.frame_28.sizePolicy().hasHeightForWidth())
+        self.frame_28.setSizePolicy(sizePolicy3)
         self.frame_28.setFrameShape(QFrame.StyledPanel)
         self.frame_28.setFrameShadow(QFrame.Raised)
+        self.verticalLayout_18 = QVBoxLayout(self.frame_28)
+        self.verticalLayout_18.setObjectName(u"verticalLayout_18")
         self.tabWidget_4 = QTabWidget(self.frame_28)
         self.tabWidget_4.setObjectName(u"tabWidget_4")
-        self.tabWidget_4.setGeometry(QRect(0, 0, 574, 377))
         self.tab_car_3 = QWidget()
         self.tab_car_3.setObjectName(u"tab_car_3")
         self.verticalLayout_40 = QVBoxLayout(self.tab_car_3)
@@ -541,6 +550,9 @@ class Ui_MainWindow(object):
 
         self.tabWidget_4.addTab(self.tab_car_3, "")
 
+        self.verticalLayout_18.addWidget(self.tabWidget_4)
+
+
         self.horizontalLayout_25.addWidget(self.frame_28)
 
         self.stackedWidget_3.addWidget(self.page_5)
@@ -577,11 +589,11 @@ class Ui_MainWindow(object):
 
         self.frame_11 = QFrame(self.frame_12)
         self.frame_11.setObjectName(u"frame_11")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
-        sizePolicy3.setHorizontalStretch(30)
-        sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.frame_11.sizePolicy().hasHeightForWidth())
-        self.frame_11.setSizePolicy(sizePolicy3)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        sizePolicy4.setHorizontalStretch(30)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.frame_11.sizePolicy().hasHeightForWidth())
+        self.frame_11.setSizePolicy(sizePolicy4)
         self.frame_11.setMinimumSize(QSize(130, 0))
         self.frame_11.setMaximumSize(QSize(150, 16777215))
         self.frame_11.setStyleSheet(u"QPushButton{\n"
@@ -631,11 +643,11 @@ class Ui_MainWindow(object):
 
         self.frame_filter = QFrame(self.frame_11)
         self.frame_filter.setObjectName(u"frame_filter")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
-        sizePolicy4.setHorizontalStretch(0)
-        sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.frame_filter.sizePolicy().hasHeightForWidth())
-        self.frame_filter.setSizePolicy(sizePolicy4)
+        sizePolicy5 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        sizePolicy5.setHorizontalStretch(0)
+        sizePolicy5.setVerticalStretch(0)
+        sizePolicy5.setHeightForWidth(self.frame_filter.sizePolicy().hasHeightForWidth())
+        self.frame_filter.setSizePolicy(sizePolicy5)
         self.frame_filter.setMinimumSize(QSize(110, 0))
         self.frame_filter.setMaximumSize(QSize(110, 16777215))
         self.frame_filter.setStyleSheet(u"")
@@ -660,11 +672,11 @@ class Ui_MainWindow(object):
 
         self.btn_okfilter = QPushButton(self.frame_filter)
         self.btn_okfilter.setObjectName(u"btn_okfilter")
-        sizePolicy5 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        sizePolicy5.setHorizontalStretch(0)
-        sizePolicy5.setVerticalStretch(0)
-        sizePolicy5.setHeightForWidth(self.btn_okfilter.sizePolicy().hasHeightForWidth())
-        self.btn_okfilter.setSizePolicy(sizePolicy5)
+        sizePolicy6 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        sizePolicy6.setHorizontalStretch(0)
+        sizePolicy6.setVerticalStretch(0)
+        sizePolicy6.setHeightForWidth(self.btn_okfilter.sizePolicy().hasHeightForWidth())
+        self.btn_okfilter.setSizePolicy(sizePolicy6)
         self.btn_okfilter.setMinimumSize(QSize(90, 20))
         self.btn_okfilter.setMaximumSize(QSize(25, 25))
         self.btn_okfilter.setSizeIncrement(QSize(0, 0))
@@ -807,6 +819,16 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_21.addWidget(self.exportSHPSafra)
 
+        self.btn_CSV = QPushButton(self.frame_16)
+        self.btn_CSV.setObjectName(u"btn_CSV")
+        self.btn_CSV.setMinimumSize(QSize(120, 30))
+        self.btn_CSV.setStyleSheet(u"QPushButton:hover{\n"
+"	border-radius: 15px;\n"
+"	background-color: rgb(255,170,0);\n"
+"}")
+
+        self.verticalLayout_21.addWidget(self.btn_CSV)
+
         self.verticalSpacer_7 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_21.addItem(self.verticalSpacer_7)
@@ -871,8 +893,8 @@ class Ui_MainWindow(object):
 
         self.frame_21 = QFrame(self.frame_20)
         self.frame_21.setObjectName(u"frame_21")
-        sizePolicy3.setHeightForWidth(self.frame_21.sizePolicy().hasHeightForWidth())
-        self.frame_21.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.frame_21.sizePolicy().hasHeightForWidth())
+        self.frame_21.setSizePolicy(sizePolicy4)
         self.frame_21.setMinimumSize(QSize(130, 0))
         self.frame_21.setMaximumSize(QSize(150, 16777215))
         self.frame_21.setStyleSheet(u"QPushButton{\n"
@@ -917,8 +939,8 @@ class Ui_MainWindow(object):
 
         self.frame_filter_2 = QFrame(self.frame_21)
         self.frame_filter_2.setObjectName(u"frame_filter_2")
-        sizePolicy4.setHeightForWidth(self.frame_filter_2.sizePolicy().hasHeightForWidth())
-        self.frame_filter_2.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.frame_filter_2.sizePolicy().hasHeightForWidth())
+        self.frame_filter_2.setSizePolicy(sizePolicy5)
         self.frame_filter_2.setMinimumSize(QSize(110, 0))
         self.frame_filter_2.setMaximumSize(QSize(110, 16777215))
         self.frame_filter_2.setStyleSheet(u"")
@@ -943,8 +965,8 @@ class Ui_MainWindow(object):
 
         self.btn_okfilter_LRV = QPushButton(self.frame_filter_2)
         self.btn_okfilter_LRV.setObjectName(u"btn_okfilter_LRV")
-        sizePolicy5.setHeightForWidth(self.btn_okfilter_LRV.sizePolicy().hasHeightForWidth())
-        self.btn_okfilter_LRV.setSizePolicy(sizePolicy5)
+        sizePolicy6.setHeightForWidth(self.btn_okfilter_LRV.sizePolicy().hasHeightForWidth())
+        self.btn_okfilter_LRV.setSizePolicy(sizePolicy6)
         self.btn_okfilter_LRV.setMinimumSize(QSize(90, 20))
         self.btn_okfilter_LRV.setMaximumSize(QSize(25, 25))
         self.btn_okfilter_LRV.setSizeIncrement(QSize(0, 0))
@@ -1087,6 +1109,16 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_30.addWidget(self.exportSHPSafra_LRV)
 
+        self.btn_CSV2 = QPushButton(self.frame_25)
+        self.btn_CSV2.setObjectName(u"btn_CSV2")
+        self.btn_CSV2.setMinimumSize(QSize(120, 30))
+        self.btn_CSV2.setStyleSheet(u"QPushButton:hover{\n"
+"	border-radius: 15px;\n"
+"	background-color: rgb(255,170,0);\n"
+"}")
+
+        self.verticalLayout_30.addWidget(self.btn_CSV2)
+
         self.verticalSpacer_11 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_30.addItem(self.verticalSpacer_11)
@@ -1124,11 +1156,11 @@ class Ui_MainWindow(object):
         self.verticalLayout_32.setObjectName(u"verticalLayout_32")
         self.tabWidget = QTabWidget(self.page_3)
         self.tabWidget.setObjectName(u"tabWidget")
-        sizePolicy6 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        sizePolicy6.setHorizontalStretch(0)
-        sizePolicy6.setVerticalStretch(0)
-        sizePolicy6.setHeightForWidth(self.tabWidget.sizePolicy().hasHeightForWidth())
-        self.tabWidget.setSizePolicy(sizePolicy6)
+        sizePolicy7 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy7.setHorizontalStretch(0)
+        sizePolicy7.setVerticalStretch(0)
+        sizePolicy7.setHeightForWidth(self.tabWidget.sizePolicy().hasHeightForWidth())
+        self.tabWidget.setSizePolicy(sizePolicy7)
         self.tabWidget.setTabPosition(QTabWidget.North)
         self.tabWidget.setIconSize(QSize(16, 16))
         self.tab = QWidget()
@@ -1305,7 +1337,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 508, 266))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 101, 89))
         self.horizontalLayout_6 = QHBoxLayout(self.scrollAreaWidgetContents)
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
         self.label_4 = QLabel(self.scrollAreaWidgetContents)
@@ -1342,126 +1374,41 @@ class Ui_MainWindow(object):
         self.page_sobre.setObjectName(u"page_sobre")
         self.horizontalLayout_9 = QHBoxLayout(self.page_sobre)
         self.horizontalLayout_9.setObjectName(u"horizontalLayout_9")
-        self.frame_8 = QFrame(self.page_sobre)
-        self.frame_8.setObjectName(u"frame_8")
-        self.frame_8.setFrameShape(QFrame.StyledPanel)
-        self.frame_8.setFrameShadow(QFrame.Raised)
-        self.verticalLayout_10 = QVBoxLayout(self.frame_8)
-        self.verticalLayout_10.setObjectName(u"verticalLayout_10")
-        self.pushButton_4 = QPushButton(self.frame_8)
-        self.pushButton_4.setObjectName(u"pushButton_4")
-        self.pushButton_4.setAutoFillBackground(False)
-
-        self.verticalLayout_10.addWidget(self.pushButton_4)
-
-        self.pushButton_7 = QPushButton(self.frame_8)
-        self.pushButton_7.setObjectName(u"pushButton_7")
-
-        self.verticalLayout_10.addWidget(self.pushButton_7)
-
-        self.pushButton_6 = QPushButton(self.frame_8)
-        self.pushButton_6.setObjectName(u"pushButton_6")
-
-        self.verticalLayout_10.addWidget(self.pushButton_6)
-
-        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-
-        self.verticalLayout_10.addItem(self.verticalSpacer_3)
-
-
-        self.horizontalLayout_9.addWidget(self.frame_8)
-
-        self.stackedWidget_2 = QStackedWidget(self.page_sobre)
-        self.stackedWidget_2.setObjectName(u"stackedWidget_2")
-        self.page1_Arquea = QWidget()
-        self.page1_Arquea.setObjectName(u"page1_Arquea")
-        self.page1_Arquea.setStyleSheet(u"\n"
-"QWidget {\n"
-"    background-image: url(C:\\Workspace\\Python\\ProjetoAPP\\icons\\logo_arquea.png);\n"
-"    background-repeat: no-repeat;\n"
-"    background-position: center;\n"
-"}\n"
-"\n"
-"\n"
-"")
-        self.verticalLayout_16 = QVBoxLayout(self.page1_Arquea)
-        self.verticalLayout_16.setObjectName(u"verticalLayout_16")
-        self.frame_9 = QFrame(self.page1_Arquea)
-        self.frame_9.setObjectName(u"frame_9")
-        self.frame_9.setFrameShape(QFrame.StyledPanel)
-        self.frame_9.setFrameShadow(QFrame.Raised)
-        self.horizontalLayout_7 = QHBoxLayout(self.frame_9)
-        self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
-        self.label_7 = QLabel(self.frame_9)
-        self.label_7.setObjectName(u"label_7")
-        self.label_7.setAlignment(Qt.AlignCenter)
-
-        self.horizontalLayout_7.addWidget(self.label_7)
-
-        self.label_8 = QLabel(self.frame_9)
-        self.label_8.setObjectName(u"label_8")
-        self.label_8.setAlignment(Qt.AlignCenter)
-
-        self.horizontalLayout_7.addWidget(self.label_8)
-
-
-        self.verticalLayout_16.addWidget(self.frame_9)
-
-        self.stackedWidget_2.addWidget(self.page1_Arquea)
-        self.page_RenovaBio = QWidget()
-        self.page_RenovaBio.setObjectName(u"page_RenovaBio")
-        self.verticalLayout_15 = QVBoxLayout(self.page_RenovaBio)
-        self.verticalLayout_15.setObjectName(u"verticalLayout_15")
-        self.frame_10 = QFrame(self.page_RenovaBio)
-        self.frame_10.setObjectName(u"frame_10")
-        self.frame_10.setFrameShape(QFrame.StyledPanel)
-        self.frame_10.setFrameShadow(QFrame.Raised)
-        self.horizontalLayout_8 = QHBoxLayout(self.frame_10)
-        self.horizontalLayout_8.setObjectName(u"horizontalLayout_8")
-        self.label_11 = QLabel(self.frame_10)
-        self.label_11.setObjectName(u"label_11")
-        self.label_11.setAlignment(Qt.AlignCenter)
-
-        self.horizontalLayout_8.addWidget(self.label_11)
-
-        self.label_12 = QLabel(self.frame_10)
-        self.label_12.setObjectName(u"label_12")
-        self.label_12.setAlignment(Qt.AlignCenter)
-
-        self.horizontalLayout_8.addWidget(self.label_12)
-
-
-        self.verticalLayout_15.addWidget(self.frame_10)
-
-        self.stackedWidget_2.addWidget(self.page_RenovaBio)
-        self.page_Autor = QWidget()
-        self.page_Autor.setObjectName(u"page_Autor")
-        self.verticalLayout_14 = QVBoxLayout(self.page_Autor)
-        self.verticalLayout_14.setObjectName(u"verticalLayout_14")
-        self.frame_7 = QFrame(self.page_Autor)
+        self.frame_7 = QFrame(self.page_sobre)
         self.frame_7.setObjectName(u"frame_7")
+        self.frame_7.setStyleSheet(u"#frame_7  QPushButton {\n"
+"	background-color: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0 rgba(0, 100, 0, 255), stop:1 rgba(0, 50, 0, 255));\n"
+"	color: white;\n"
+"	font-size: 18px;\n"
+"	border-radius: 15px;\n"
+"	border: 2px solid rgba(0, 0, 0, 100);\n"
+"	padding: 10px 20px;\n"
+"}\n"
+"#frame_7  QPushButton:hover {\n"
+"	background-color: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0 rgba(0, 120, 0, 255), stop:1 rgba(0, 70, 0, 255));\n"
+"}\n"
+"#frame_7  QPushButton:pressed {\n"
+"	background-color: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0 rgba(0, 80, 0, 255), stop:1 rgba(0, 40, 0, 255));\n"
+"}")
         self.frame_7.setFrameShape(QFrame.StyledPanel)
         self.frame_7.setFrameShadow(QFrame.Raised)
         self.horizontalLayout_10 = QHBoxLayout(self.frame_7)
         self.horizontalLayout_10.setObjectName(u"horizontalLayout_10")
-        self.label_9 = QLabel(self.frame_7)
-        self.label_9.setObjectName(u"label_9")
-        self.label_9.setAlignment(Qt.AlignCenter)
+        self.btn_arquea = QPushButton(self.frame_7)
+        self.btn_arquea.setObjectName(u"btn_arquea")
+        self.btn_arquea.setMaximumSize(QSize(200, 50))
+        self.btn_arquea.setAutoFillBackground(False)
 
-        self.horizontalLayout_10.addWidget(self.label_9)
+        self.horizontalLayout_10.addWidget(self.btn_arquea)
 
-        self.label_10 = QLabel(self.frame_7)
-        self.label_10.setObjectName(u"label_10")
-        self.label_10.setAlignment(Qt.AlignCenter)
+        self.btn_github = QPushButton(self.frame_7)
+        self.btn_github.setObjectName(u"btn_github")
+        self.btn_github.setMaximumSize(QSize(200, 50))
 
-        self.horizontalLayout_10.addWidget(self.label_10)
+        self.horizontalLayout_10.addWidget(self.btn_github)
 
 
-        self.verticalLayout_14.addWidget(self.frame_7)
-
-        self.stackedWidget_2.addWidget(self.page_Autor)
-
-        self.horizontalLayout_9.addWidget(self.stackedWidget_2)
+        self.horizontalLayout_9.addWidget(self.frame_7)
 
         self.stackedWidget.addWidget(self.page_sobre)
 
@@ -1492,15 +1439,14 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.stackedWidget.setCurrentIndex(1)
-        self.stackedWidget_3.setCurrentIndex(1)
-        self.toolBox_usinas.setCurrentIndex(1)
+        self.stackedWidget.setCurrentIndex(0)
+        self.stackedWidget_3.setCurrentIndex(0)
+        self.toolBox_usinas.setCurrentIndex(0)
         self.toolBox_usinas.layout().setSpacing(6)
         self.tabWidget_4.setCurrentIndex(0)
         self.tabWidget_2.setCurrentIndex(1)
         self.tabWidget_3.setCurrentIndex(1)
         self.tabWidget.setCurrentIndex(0)
-        self.stackedWidget_2.setCurrentIndex(2)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -1508,7 +1454,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.label_3.setText(QCoreApplication.translate("MainWindow", u"NOME/LOGO", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p align=\"center\"><img src=\":/icons_/ARQUEA.png\"/></p></body></html>", None))
         self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Home", None))
         self.pushButton_9.setText(QCoreApplication.translate("MainWindow", u"USINAS", None))
         self.pushButton_5.setText(QCoreApplication.translate("MainWindow", u"Sobre", None))
@@ -1516,8 +1462,7 @@ class Ui_MainWindow(object):
         self.pushButton.setToolTip(QCoreApplication.translate("MainWindow", u"<html><head/><body><p><img src=\":/C:/Workspace/Python/ProjetoAPP/icons/menu-bar.png\"/></p></body></html>", None))
 #endif // QT_CONFIG(tooltip)
         self.pushButton.setText("")
-        self.label_6.setText(QCoreApplication.translate("MainWindow", u"ARQUEA Engenharia e Geotecnologia", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p align=\"center\"><img src=\":/icons/logo_arquea_completo.png\"/></p></body></html>", None))
+        self.label_5.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p align=\"center\"><img src=\":/icons_/logo_arquea_completo.png\"/></p></body></html>", None))
         self.label_13.setText(QCoreApplication.translate("MainWindow", u"INFORMA\u00c7OES DAS USINAS", None))
         self.toolBox_usinas.setItemText(self.toolBox_usinas.indexOf(self.USINAS_page), QCoreApplication.translate("MainWindow", u"USINAS", None))
         self.pushButton_11.setText(QCoreApplication.translate("MainWindow", u"SELECIONAR CAR", None))
@@ -1594,6 +1539,7 @@ class Ui_MainWindow(object):
         ___qtablewidgetitem25.setText(QCoreApplication.translate("MainWindow", u"ELEGIBILID", None));
         self.importDataSafra.setText(QCoreApplication.translate("MainWindow", u"Importar Dados", None))
         self.exportSHPSafra.setText(QCoreApplication.translate("MainWindow", u"Exportar", None))
+        self.btn_CSV.setText(QCoreApplication.translate("MainWindow", u"CSV Demonst.", None))
         self.btn_back_1.setText(QCoreApplication.translate("MainWindow", u"VOLTAR", None))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_safra), QCoreApplication.translate("MainWindow", u"SAFRA", None))
         self.btn_planilha_dados_LRV.setText(QCoreApplication.translate("MainWindow", u"Buscar Planilha", None))
@@ -1633,6 +1579,7 @@ class Ui_MainWindow(object):
         ___qtablewidgetitem40.setText(QCoreApplication.translate("MainWindow", u"ELEGIBILID", None));
         self.importDataSafra_LRV.setText(QCoreApplication.translate("MainWindow", u"Importar Dados", None))
         self.exportSHPSafra_LRV.setText(QCoreApplication.translate("MainWindow", u"Exportar", None))
+        self.btn_CSV2.setText(QCoreApplication.translate("MainWindow", u"CSV Demonst.", None))
         self.btn_back_LRV_3.setText(QCoreApplication.translate("MainWindow", u"VOLTAR", None))
         self.tabWidget_3.setTabText(self.tabWidget_3.indexOf(self.tab_safra_2), QCoreApplication.translate("MainWindow", u"SAFRA", None))
         ___qtablewidgetitem41 = self.tableWidget.horizontalHeaderItem(0)
@@ -1695,15 +1642,8 @@ class Ui_MainWindow(object):
                         "p:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:11pt;\">         026-002-C17575-A17-00-A-21-22-23</span></p>\n"
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:11pt;\">         026-003-C17575-A17-00-A-21-22-23</span></p></body></html>", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"Como Funciona?", None))
-        self.pushButton_4.setText(QCoreApplication.translate("MainWindow", u"Sobre a Arquea", None))
-        self.pushButton_7.setText(QCoreApplication.translate("MainWindow", u"RenovaBio", None))
-        self.pushButton_6.setText(QCoreApplication.translate("MainWindow", u"Sobre o autor", None))
-        self.label_7.setText(QCoreApplication.translate("MainWindow", u"SOBRE A ARQUEA", None))
-        self.label_8.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p><a href=\"https://arqueageotec.com.br/\"><span style=\" text-decoration: underline; color:#0078d7;\">LINK DO SITE</span></a></p></body></html>", None))
-        self.label_11.setText(QCoreApplication.translate("MainWindow", u"RENOVA BIO", None))
-        self.label_12.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p><a href=\"https://www.gov.br/anp/pt-br/assuntos/renovabio\"><span style=\" text-decoration: underline; color:#0078d7;\">GOV</span></a></p></body></html>", None))
-        self.label_9.setText(QCoreApplication.translate("MainWindow", u"GITHUB", None))
-        self.label_10.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p><a href=\"https://github.com/WendellSantosEng/\"><span style=\" text-decoration: underline; color:#0078d7;\">LINK</span></a></p></body></html>", None))
+        self.btn_arquea.setText(QCoreApplication.translate("MainWindow", u"Site ARQUEA", None))
+        self.btn_github.setText(QCoreApplication.translate("MainWindow", u"Projeto no GITHUB", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"ArqueaConnect\u00a9", None))
     # retranslateUi
 

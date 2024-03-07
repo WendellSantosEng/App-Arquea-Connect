@@ -1,19 +1,15 @@
 """
 
-!!! APLICAÇÃO EM DESENVOLVIMENTO !!!
-
 Autor: Wendell Resende dos Santos
-Data de Criação: Em desenvolvimento
+Data de Criação: 15/01/2024 ~ 08/03/2024
 
 Descrição:
-Esta aplicação é extremamente exponenciável, e no memomento o intuito principal
-é integração de serviços de geoprocessamento da empresa Arquea Engenharia e Geotecnologia, com Python
+Esta aplicação foi desenvolvida para realização de serviços de geoprocessamento da empresa Arquea Engenharia e Geotecnologia
 
 Uso:
-Uso exclusivo da equipe Arquea, porém no futuro se expanda
+Uso exclusivo da equipe Arquea
 
 """
-
 
 import sys
 import io
@@ -26,7 +22,7 @@ import csv
 import qdarkstyle
 from PySide6.QtCore import QCoreApplication, QPropertyAnimation, QEasingCurve, QObject, Signal, QUrl
 from PySide6.QtGui import QIcon, QDesktopServices
-from PySide6.QtWidgets import (QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QFileDialog, QMessageBox)
+from PySide6.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QFileDialog, QMessageBox
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Polygon
@@ -54,16 +50,8 @@ class ShapefileLoader(QObject):
             
             # Definindo os nomes das colunas
             sicarmt.columns = column_names
-
-            # Verificar os nomes das colunas antes e depois da atribuição
-            print("Nomes das colunas antes da atribuição:", sicarmt.columns)
             
             self.shapefile_loaded.emit(sicarmt)
-
-            # Verificar algumas informações sobre o GeoDataFrame após a atribuição
-            print("Informações sobre o GeoDataFrame após a atribuição:")
-            print(sicarmt.head())
-            print(sicarmt.info())
 
             # Definindo o valor máximo da barra de progresso como o número total de registros no GeoDataFrame
             total_records = len(sicarmt)
@@ -85,7 +73,7 @@ class ShapefileLoader(QObject):
             return sicarmt
 
         except Exception as e:
-            print(f"Erro ao carregar o Shapefile: {e}")
+            QMessageBox.critical(None, "Erro ao carregar o Shapefile", str(e))
 
     def stop_loading(self):
         # Define o evento de parada para interromper o processamento
@@ -106,23 +94,7 @@ class ClassShape(QObject):
             self.ui_main_window.label_aguarde.hide()
 
     def handle_shapefile_loaded(self, sicarmt):
-        print("carregou")
-        # Verificando se o GeoDataFrame foi carregado corretamente
-        if not sicarmt.empty:
-            print("O GeoDataFrame não está vazio.")
-        else:
-            print("O GeoDataFrame está vazio.")
-
-        # Exibindo algumas informações sobre o GeoDataFrame
-        print("Informações sobre o GeoDataFrame:")
-        print(sicarmt.head())
-        print(sicarmt.info())
-
-        # Este método é chamado quando o shapefile foi carregado
-        # Você pode fazer qualquer coisa que precise com o sicarmt aqui
-        # Por exemplo, você pode atribuí-lo a uma variável de instância para acessá-lo posteriormente
         self.ui_main_window.sicarmt = sicarmt
-        print("ta carregado")
         self.ui_main_window.btn_selectCAR.setEnabled(True)
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -183,7 +155,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_saved.clicked.connect(self.salvar_modificacoes)
 
         # Botão para salvar Shapefile
-        self.btn_savedshp.clicked.connect(lambda: self.exportar_shp_da_tabela(self.tableWidget, "SUP"))
+        self.btn_savedshp.clicked.connect(lambda: self.exportar_shp_da_tabela(self.tableWidget, "SUP", None))
 
         # Botao para abrir Planilha de Dados        
         self.btn_planilha_dados.clicked.connect(lambda: self.abrir_arquivos("DATA", self.tableWidget_2, self.tableWidget_LRV_dados))
@@ -246,8 +218,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         self.car_values_safra_SRS = []
         self.car_values_safra_LRV = []
-        self.btn_CSV.clicked.connect(lambda: self.openCsvFile(self.car_values_safra_SRS))
-        self.btn_CSV2.clicked.connect(lambda: self.openCsvFile(self.car_values_safra_LRV))
+        self.btn_CSV.clicked.connect(lambda: self.openCsvFile(self.car_values_safra_SRS, self.tableWidget_4))
+        self.btn_CSV2.clicked.connect(lambda: self.openCsvFile(self.car_values_safra_LRV, self.tableWidget_LRVsafra))
 
         self.btn_arquea.clicked.connect(self.open_website_arquea)
         self.btn_github.clicked.connect(self.open_website_github)
@@ -281,9 +253,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Criar um DataFrame do pandas com os dados da tabela e os cabeçalhos
         df = pd.DataFrame(dados, columns=cabecalhos)
 
-        list_geometry = df['geometry'].tolist()
+        # Inicializar list_geometry com uma lista vazia
+        list_geometry = []
 
-        df.drop(columns=['geometry'], inplace=True)
+        # Verificar se a coluna "geometry" está presente no DataFrame
+        if 'geometry' in df.columns:
+            list_geometry = df['geometry'].tolist()
+            df.drop(columns=['geometry'], inplace=True)
 
         # Chamar a função para modificar os dados
         workbook_modificado = codigo_supressao(df)
@@ -300,16 +276,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # Renomear a coluna para 'geometry'
             ws.cell(row=1, column=last_column_index, value='geometry')
-        else:
-            print("A coluna 'geometry' já existe.")
 
         # Atualizar a QTableWidget com os dados do workbook
         self.mostrar_dados(workbook_modificado, self.tableWidget)
 
-    # Menu da esquerda
     def leftMenu(self):
         width = self.left_container.width()
-        print(width)
 
         if width == 9:
             newWidth = 150
@@ -326,7 +298,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     
     def mostrar_dados_CBX(self, worksheet, tablewidget):
         if not isinstance(worksheet, Worksheet):
-            print("Erro: O objeto não é uma instância válida de Worksheet")
+            QMessageBox.critical(None, "Erro: O objeto não é uma instância válida de Worksheet")
             return
 
         dados = []
@@ -361,7 +333,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             else:
                 if tablewidget is not None:
                     # Mostrar dados na tabela especificada
-                    self.mostrar_dados(tablewidget, tablewidget)
+                    self.mostrar_dados(workbook, tablewidget)
 
     def parse_coordinates(self, coord_str):
         coords = []
@@ -388,8 +360,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     data_str = cell[data_column_index].strftime("%d/%m/%Y")
                     # Atualiza o valor na célula
                     worksheet.cell(row=i + 2, column=data_column_index + 1, value=data_str)
-        else:
-            print("A coluna 'DATA' não foi encontrada.")
 
     def abrir_shp(self):
         shp_path, _ = QFileDialog.getOpenFileName(self, "Selecionar Shapefile", "", "Arquivos Shapefile (*.shp)")
@@ -412,7 +382,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # Exibir os dados na tabelaWidget
             self.mostrar_dados(wb, self.tableWidget)
 
-    # Método para mostrar dados na tabela widget e atualizar a planilha
     def mostrar_dados(self, workbook, tablewidget):
         # Atualizar a QTableWidget com os dados do workbook
         worksheet = workbook.active
@@ -436,7 +405,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     # Caso contrário, insere o valor normalmente
                     tablewidget.setItem(i, j, QTableWidgetItem(str(df.iloc[i, j])))
 
-    # Método para salvar as modificações na planilha original
     def salvar_modificacoes(self):
         options = QFileDialog.Options()
         fileName, _ = QFileDialog.getSaveFileName(self, "Salvar Tabela como Excel", "", "Arquivo Excel (*.xlsx)")
@@ -487,7 +455,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def filtred(self, search_filter, tablewidget, column_index):
         # Obtém o texto de filtro do lineedit
         filter_text = search_filter.text().lower()
-        print(filter_text, " em ", column_index)
 
         if tablewidget is self.tableWidget_2:
             # DataFrame para armazenar os dados filtrados
@@ -558,14 +525,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if tablewidget is self.tableWidget_2:
             self.name_general_safra = self.shp_safra_name_SRS
-            print("DENTRO SRS: ", self.name_general_safra)
         elif tablewidget is self.tableWidget_LRV_dados:
             self.name_general_safra = self.shp_safra_name_LRV
-            print("DENTRO LRV: ", self.name_general_safra)
-        
-        # Imprime o DataFrame
-        print("SRS: ",self.df_SRS)
-        print("LRV: ",self.df_LRV)
 
     def restore_filter(self, tablewidget):
         # Restaura o filtro anterior, se existir, para a tabela atual
@@ -579,7 +540,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         sicar_path, _ = QFileDialog.getOpenFileName(None, "Selecionar Shapefile", "", "Arquivos Shapefile (*.shp)")
 
         if sicar_path:
-            print("CARREGOU")
             self.progressBar_sicar.setValue(0)
             self.label_aguarde.show()
             self.progressBar_sicar.show()
@@ -600,16 +560,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.label_aguarde.hide()
 
     def handle_shapefile_loaded(self, sicarmt):
-        # Verificando se o GeoDataFrame foi carregado corretamente
-        if not sicarmt.empty:
-            print("O GeoDataFrame não está vazio.")
-        else:
-            print("O GeoDataFrame está vazio.")
-
-        # Exibindo algumas informações sobre o GeoDataFrame
-        print("Informações sobre o GeoDataFrame:")
-        print(sicarmt.head())
-        print(sicarmt.info())
         
         # Este método é chamado quando o shapefile foi carregado
         # Você pode fazer qualquer coisa que precise com o sicarmt aqui
@@ -633,9 +583,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.shp_car_year = df[ANO].iloc[0]
             self.shp_car_name = self.shp_car_name.replace(" ","_")
             self.shp_car_name = "CAR_" + self.shp_car_name + "_" + self.shp_car_year
-            print()
-            print("CAR NAME: ",self.shp_car_name)
-            print()
 
             car_values_df = df[CAR].unique()  # Obtém os valores únicos da coluna CAR
 
@@ -657,8 +604,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 for j, value in enumerate(row[1]):
                     item = QTableWidgetItem(str(value))
                     self.tableWidget_3.setItem(i, j, item)
-        else:
-            print("A coluna 'CAR' não está presente no DataFrame.")
 
     def extrair_dados_da_tabela(self, tablewidget):
         data = []
@@ -703,10 +648,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 
                 if shp_dir:
                     # Cria a estrutura de diretórios necessária
-                    shp_folder = os.path.join(shp_dir, nome_shp_safra)
+                    shp_folder = os.path.join(shp_dir, nome_shp_safra[4:])
                     car_dir = os.path.join(shp_folder, f"CAR_{nome_shp_safra[-4:]}")
                     safra_dir = os.path.join(shp_folder, f"SAFRA_{nome_shp_safra[-4:]}")
-                    
+
                     if not os.path.exists(shp_folder):
                         os.mkdir(shp_folder)
                     if not os.path.exists(car_dir):
@@ -714,7 +659,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     if not os.path.exists(safra_dir):
                         os.mkdir(safra_dir)
                     
-                    car_name = "CAR_" + nome_shp_safra
+                    car_name = nome_shp_safra
                     # Caminho completo para salvar o arquivo na pasta CAR
                     shp_path = os.path.join(car_dir, f"{car_name}.shp")
                     
@@ -747,13 +692,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         gdf = gpd.GeoDataFrame(df)
                         gdf.crs = 'EPSG:4674'
                     except NameError:
-                        print("Erro ao criar geometria. Verifique se o pacote shapely está corretamente importado.")
+                        QMessageBox.critical(None, "Erro ao criar geometria. Verifique se o pacote shapely está corretamente importado.")
                         return
                 else:
                     return
                     
                 gdf.to_file(shp_path, driver='ESRI Shapefile')
         elif value == "SAFRA":
+            def replace_empty_string(value):
+                if value == '':
+                    return None
+                return value
+            dtype_list = [str, str,str,str,int,str,str,str,str,str,str,float,float,str,str,]
             data, header_items = self.extrair_dados_da_tabela(tablewidget)
             data = [row for row in data if all(item is not None for item in row)]  # Remover linhas com células vazias
             # Pergunta ao usuário se deseja criar as pastas necessárias
@@ -782,6 +732,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     shp_path = os.path.join(safra_dir, f"{nome_shp_safra}.shp")
                     
                     df = pd.DataFrame(data, columns=header_items)
+                    df = df.applymap(replace_empty_string)
+
+                    for i, dtype in enumerate(dtype_list):
+                        if i < len(df.columns):  # Verificar se o índice está dentro do intervalo das colunas do DataFrame
+                            df[df.columns[i]] = df[df.columns[i]].astype(dtype)
                     df['geometry'] = None
                     gdf = gpd.GeoDataFrame(df, geometry=[shapely.geometry.Polygon() for _ in range(len(df))])
                     gdf.crs = 'EPSG:4674'
@@ -792,6 +747,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 shp_path, _ = QFileDialog.getSaveFileName(self, "Salvar Shapefile", nome_shp_safra, "Arquivos Shapefile (*.shp)")
                 if shp_path:
                     df = pd.DataFrame(data, columns=header_items)
+                    df = df.applymap(replace_empty_string)
+                    for i, dtype in enumerate(dtype_list):
+                        if i < len(df.columns):  # Verificar se o índice está dentro do intervalo das colunas do DataFrame
+                            df[df.columns[i]] = df[df.columns[i]].astype(dtype)
                     df['geometry'] = None
                     gdf = gpd.GeoDataFrame(df, geometry=[shapely.geometry.Polygon() for _ in range(len(df))])
                     gdf.crs = 'EPSG:4674'
@@ -803,30 +762,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if shp_path:
                 df = pd.DataFrame(data, columns=header_items)
 
-                df.rename(columns={'geometry': 'polygon'}, inplace=True)
-
                 if 'polygon' in df.columns:
                     try:
-                        df['geometry'] = df['polygon'].apply(lambda coords: shapely.geometry.Polygon(self.parse_coordinates(coords)) if isinstance(coords, str) else None)
+                        df['geometry'] = None
+                        gdf = gpd.GeoDataFrame(df, geometry=[shapely.geometry.Polygon() for _ in range(len(df))])
+                        gdf.crs = 'EPSG:4674'
+                        gdf.to_file(shp_path, driver='ESRI Shapefile')
 
-                        # Remover linhas com geometria inválida
-                        df = df.dropna(subset=['geometry'])
+                        # df['geometry'] = df['polygon'].apply(lambda coords: shapely.geometry.Polygon(self.parse_coordinates(coords)) if isinstance(coords, str) else None)
 
-                        # Remover a coluna "polygon" agora que a coluna de geometria está presente
-                        df.drop(columns=['polygon'], inplace=True)
+                        # # Remover linhas com geometria inválida
+                        # df = df.dropna(subset=['geometry'])
 
-                        # Criar um GeoDataFrame a partir do DataFrame 'df'
-                        gdf = gpd.GeoDataFrame(df)
+                        # # Remover a coluna "polygon" agora que a coluna de geometria está presente
+                        # df.drop(columns=['polygon'], inplace=True)
+
+                        # # Criar um GeoDataFrame a partir do DataFrame 'df'
+                        # gdf = gpd.GeoDataFrame(df)
+
                     except NameError:
-                        print("Erro ao criar geometria. Verifique se o pacote shapely está corretamente importado.")
+                        QMessageBox.critical(None, "Erro ao criar geometria. Verifique se o pacote shapely está corretamente importado.")
                         return
                 else:
                     return
                     
                 gdf.to_file(shp_path, driver='ESRI Shapefile')
-
-        else:
-            print("Valor não reconhecido para exportação.")
 
     def import_data_safra_func(self, df, tablewidget):
         
@@ -885,46 +845,65 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                             self.car_values_safra_LRV.append(value)
 
                 except KeyError as e:
-                    print(f"Erro: Coluna não encontrada no DataFrame - {e}")
+                    QMessageBox.critical(None, f"Erro: Coluna não encontrada no DataFrame - {e}")
                 except ValueError as e:
-                    print(f"Erro: {e}")
+                    QMessageBox.critical(None, f"Erro: {e}")
 
         # Exemplo de obtenção do nome da usina
         column_index = headers_from_dict.index("O Grupo pertence a qual usina?")
         if tablewidget.rowCount() > 0:
             name_usina = tablewidget.item(0, column_index).text()
 
-    def openCsvFile(self, list_):
+    def openCsvFile(self, list_, tablewidget):
         options = QFileDialog.Options()
         fileName, _ = QFileDialog.getOpenFileName(self, "Abrir Arquivo CSV", "", "Arquivos CSV (*.csv)", options=options)
         if fileName:
             try:
-                # Especifique os índices das colunas que você deseja ler
-                columns_to_read = [0, 1]  # Exemplo: lendo as colunas 0 e 1
+                # Aumentar o limite de tamanho do campo permitido pelo sistema operacional (apenas para sistemas Unix-like)
+                if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+                    csv.field_size_limit(sys.maxsize)  # Definir o tamanho máximo do campo
+
+                # Leia apenas as colunas de índice 1 e 2
+                columns_to_read = ['registro_no_car', 'data_de_cadastro']  # Índices das colunas que deseja ler
 
                 data_for_car_values = {}
-                # Leia o arquivo CSV e selecione apenas as colunas especificadas pelos índices
-                df = pd.read_csv(fileName, usecols=columns_to_read)
+                chunksize = 10000  # Tamanho do chunk (ajuste conforme necessário)
 
-                # Itere sobre as linhas do DataFrame
-                for _, row in df.iterrows():
-                    car = row.iloc[0]  # A primeira coluna
-                    data = row.iloc[1]  # A segunda coluna
-                    if car in list_:
-                        if car not in data_for_car_values:
-                            data_for_car_values[car] = []
-                        data_for_car_values[car].append(data)
+                # Leia o arquivo CSV em pedaços menores (chunks)
+                for chunk in pd.read_csv(fileName, usecols=columns_to_read, chunksize=chunksize, encoding='latin1', sep=';'):
+                    # Itere sobre os pedaços do DataFrame
+                    for _, row in chunk.iterrows():
+                        car = row.iloc[0]  # A primeira coluna
+                        data = row.iloc[1]  # A segunda coluna
+                        data = data[:10] # Tira a hora e fica só data
+                        if car in list_:
+                            if car not in data_for_car_values:
+                                data_for_car_values[car] = []
+                            data_for_car_values[car].append(data)
+
+                # Supondo que sua QTableWidget seja chamada de tableWidget
+                for car, data_list in data_for_car_values.items():
+                    for row_index in range(tablewidget.rowCount()):
+                        item = tablewidget.item(row_index, 6)  # Supondo que a coluna 'car' seja a coluna 0
+                        if item and item.text() == car:
+                            # Se encontrarmos a correspondência do 'car' na linha da tabela,
+                            # pegamos a data correspondente da lista de datas e a inserimos na tabela
+                            first_date_string = data_list[0]
+                            first_date = datetime.datetime.strptime(first_date_string, '%d/%m/%Y').strftime('%Y-%m-%d')
+                            # Convertendo de volta para objeto datetime
+                            first_date_datetime = datetime.datetime.strptime(first_date, '%Y-%m-%d')
+                            tablewidget.setItem(row_index, 9, QTableWidgetItem(first_date))  # Supondo que a coluna 'data' seja a coluna 1
 
                 # Exibir dados para o usuário
                 message = ""
                 for car, data in data_for_car_values.items():
                     message += f"Dados para {car}: {data}\n"
-                QMessageBox.information(self, "Dados de CAR", message)
             except Exception as e:
                 QMessageBox.critical(self, "Erro", f"Erro ao abrir o arquivo: {e}")
 
     def closeEvent(self, event):
         event.accept()
+        sys.exit()
 
 if __name__ == '__main__':
 
